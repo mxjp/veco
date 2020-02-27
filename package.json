@@ -1,0 +1,17 @@
+{
+	"name": "veco",
+	"description": "A toolchain for svg generation",
+	"scripts": {
+		"compile": "tsc",
+		"compile:watch": "tsc -w"
+	},
+	"devDependencies": {
+		"@types/escape-html": "0.0.20",
+		"@types/node": "^13.7.6"
+	},
+	"dependencies": {
+		"escape-html": "^1.0.3",
+		"typescript": "^3.8.2",
+		"v8-compile-cache": "^2.1.0"
+	}
+}
