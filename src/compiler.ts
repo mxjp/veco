@@ -1,6 +1,8 @@
 import * as path from "path";
+import * as fs from "fs";
 import * as ts from "typescript";
 import { Runtime, Element } from "./runtime";
+import { sync as mkdir } from "mkdirp";
 
 export interface CompilerOptions {
 	readonly cwd?: string;
@@ -95,7 +97,8 @@ export class Compiler {
 				throw new Error(`Module ${task.input} does not export an element to render.`);
 			}
 			const svg = element.render();
-			console.log("Svg output:", svg);
+			mkdir(path.dirname(task.output));
+			fs.writeFileSync(task.output, svg, "utf8");
 		}
 	}
 }
