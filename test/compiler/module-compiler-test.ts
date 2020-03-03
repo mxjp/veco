@@ -65,7 +65,7 @@ test("includes and excludes specific files if configured", async t => {
 	await writeFiles(cwd, {
 		"foo.ts": "",
 		"bar.ts": "",
-		"baz.tz": ""
+		"baz.ts": ""
 	});
 
 	const [output, compilations] = createCaptureOutput(cwd);
