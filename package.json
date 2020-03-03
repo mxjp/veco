@@ -3,20 +3,39 @@
 	"description": "A toolchain for svg generation",
 	"scripts": {
 		"compile": "tsc",
-		"compile:watch": "tsc -w"
+		"compile:watch": "tsc -w",
+		"clean": "rimraf dist/**/* test_out/**/*",
+		"test": "npm run clean && tsc -p test/tsconfig.json && ava",
+		"test:watch": "npm run clean && concurrently -n tsc,ava \"tsc -p test/tsconfig.json -w\" \"ava -w\""
 	},
 	"devDependencies": {
 		"@types/escape-html": "0.0.20",
+		"@types/is-glob": "^4.0.1",
 		"@types/klaw-sync": "^6.0.0",
 		"@types/mkdirp": "^1.0.0",
-		"@types/node": "^13.7.6"
+		"@types/node": "^13.7.6",
+		"ava": "^3.5.0",
+		"concurrently": "^5.1.0",
+		"mkdirp": "^1.0.3",
+		"rimraf": "^3.0.2"
 	},
 	"dependencies": {
+		"ansi-colors": "^4.1.1",
 		"anymatch": "^3.1.1",
+		"chokidar": "^3.3.1",
 		"escape-html": "^1.0.3",
+		"is-glob": "^4.0.1",
 		"klaw-sync": "^6.0.0",
-		"mkdirp": "^1.0.3",
 		"typescript": "^3.8.2",
 		"v8-compile-cache": "^2.1.0"
+	},
+	"ava": {
+		"verbose": true,
+		"files": [
+			"test_out/test/**/*-test.js"
+		],
+		"ignoredByWatcher": [
+			"test_out/data"
+		]
 	}
 }
