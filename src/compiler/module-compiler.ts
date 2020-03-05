@@ -5,15 +5,24 @@ import * as isGlob from "is-glob";
 import * as walk from "klaw-sync";
 import { watch } from "chokidar";
 import { Emitter, Event } from "../common/emitter";
+import { AsyncDisposable } from "../common/disposable";
+import { FileEmitter } from "./file-emitter";
 
 /**
  * The module compiler takes a tsconfig and compiles
  * all included .ts/tsx files to .veco modules and
  * declaration files if enabled.
  */
-export class ModuleCompiler {
+export class ModuleCompiler extends Emitter<{
+	watcherError: Event<[any]>,
+	file: Event<[string, string]>,
+	done: Event<[ModuleCompilerResult]>
+}> implements FileEmitter {
 	public constructor(options: ModuleCompilerOptions) {
+		super();
 		this._cwd = path.resolve(options.cwd || ".");
+
+		// TODO: Move compiler options defaults and validation to config loader:
 		this._tsCompilerOptions = Object.assign(<ts.CompilerOptions> {
 			module: ts.ModuleKind.CommonJS,
 			target: ts.ScriptTarget.ES2019,
@@ -21,21 +30,15 @@ export class ModuleCompiler {
 			jsxFactory: "render",
 			strict: true
 		}, options.tsCompilerOptions);
-		this._tsCompilerOptions.rootDir = path.resolve(this._tsCompilerOptions.rootDir || ".");
-		this._tsCompilerOptions.outDir = path.resolve(this._tsCompilerOptions.outDir || ".");
 		if (this._tsCompilerOptions.module !== ts.ModuleKind.CommonJS) {
 			throw new ModuleCompilerTsOptionsError("module", "CommonJS");
 		}
 		if (this._tsCompilerOptions.jsx !== ts.JsxEmit.React) {
 			throw new ModuleCompilerTsOptionsError("jsx", "React");
 		}
-		if (this._tsCompilerOptions.jsxFactory !== "render") {
-			throw new ModuleCompilerTsOptionsError("jsxFactory", "render");
-		}
 		this._includeGlobs = resolveGlobs(options.include, ["**"]);
 		this._include = createTester(this._includeGlobs);
 		this._exclude = createTester(resolveGlobs(options.exclude, []));
-		this._output = options.output;
 	}
 
 	private readonly _cwd: string;
@@ -44,15 +47,6 @@ export class ModuleCompiler {
 	private readonly _includeGlobs: string[];
 	private readonly _include: Tester;
 	private readonly _exclude: Tester;
-	private readonly _output: ModuleCompilerOutput;
-
-	public get cwd() {
-		return this._cwd;
-	}
-
-	public get tsCompilerOptions() {
-		return this._tsCompilerOptions;
-	}
 
 	public run() {
 		const rootNames = [
@@ -77,14 +71,10 @@ export class ModuleCompiler {
 		});
 
 		const tsResult = tsProgram.emit();
-		if (this._output.done) {
-			this._output.done(this._getResult(tsResult, tsProgram));
-		}
+		this.emit("done", this._getResult(tsResult, tsProgram));
 	}
 
-	public watch(): ModuleCompilerWatching {
-		let closed = false;
-
+	public watch(): AsyncDisposable {
 		const watcher = watch(this._includeGlobs, {
 			cwd: this._cwd,
 			awaitWriteFinish: {
@@ -92,16 +82,6 @@ export class ModuleCompiler {
 				stabilityThreshold: 200
 			}
 		});
-
-		const watching = new class extends Emitter<ModuleCompilerWatchingEvents> {
-			public async close() {
-				if (!closed) {
-					closed = true;
-					// TODO: If run debounce is in progress, await that.
-					await watcher.close();
-				}
-			}
-		}
 
 		const tsHost = ts.createIncrementalCompilerHost(this._tsCompilerOptions);
 		tsHost.writeFile = this._emitFromTsCompiler.bind(this);
@@ -117,9 +97,7 @@ export class ModuleCompiler {
 				...rootNames
 			], this._tsCompilerOptions, tsHost, tsProgram);
 			const tsResult = tsProgram.emit();
-			if (this._output.done) {
-				this._output.done(this._getResult(tsResult, tsProgram.getProgram()));
-			}
+			this.emit("done", this._getResult(tsResult, tsProgram.getProgram()));
 		}
 
 		watcher.on("add", name => {
@@ -138,6 +116,7 @@ export class ModuleCompiler {
 					run.call(this);
 				}
 			}
+			// TODO: Emit a deleted event for the corresponding output path before the next "done" event is emitted.
 		});
 
 		watcher.on("change", name => {
@@ -151,10 +130,10 @@ export class ModuleCompiler {
 		});
 
 		watcher.on("error", error => {
-			watching.emit("error", error);
+			this.emit("watcherError", error);
 		});
 
-		return watching;
+		return () => watcher.close();
 	}
 
 	private readonly _internalRootNames = [
@@ -166,7 +145,9 @@ export class ModuleCompiler {
 	}
 
 	private _emitFromTsCompiler(filename: string, data: string) {
-		this._output.emit(filename.replace(/\.js$/i, ".veco"), data);
+		filename = path.normalize(filename);
+		filename = filename.replace(/\.js$/i, ".veco");
+		this.emit("file", filename, data);
 	}
 
 	private _getResult(tsResult: ts.EmitResult, tsProgram: ts.Program): ModuleCompilerResult {
@@ -184,24 +165,10 @@ export interface ModuleCompilerOptions {
 	readonly tsCompilerOptions?: ts.CompilerOptions;
 	readonly include?: string[];
 	readonly exclude?: string[];
-	readonly output: ModuleCompilerOutput;
-}
-
-export interface ModuleCompilerOutput {
-	emit(filename: string, data: string): void;
-	done?(result: ModuleCompilerResult): void;
 }
 
 export interface ModuleCompilerResult {
 	tsDiagnostics: ts.Diagnostic[];
-}
-
-export type ModuleCompilerWatchingEvents = {
-	error: Event<[any]>;
-};
-
-export interface ModuleCompilerWatching extends Emitter<ModuleCompilerWatchingEvents> {
-	close(): Promise<void>;
 }
 
 export class ModuleCompilerTsOptionsError extends TypeError {

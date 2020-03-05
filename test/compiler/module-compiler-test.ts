@@ -1,7 +1,8 @@
-import test from "ava";
+import test, { ExecutionContext } from "ava";
 import * as path from "path";
-import { ModuleCompiler, ModuleCompilerOutput } from "../../src/compiler/module-compiler";
+import { ModuleCompiler } from "../../src/compiler/module-compiler";
 import { createTestDir, writeFiles, wait } from "../helpers";
+import { disposeAsync } from "../../src/common/disposable";
 
 test(".run() compiles included sources once", async t => {
 	const cwd = await createTestDir(t);
@@ -15,8 +16,8 @@ test(".run() compiles included sources once", async t => {
 		`
 	});
 
-	const [output, compilations] = createCaptureOutput(cwd);
-	const moduleCompiler = new ModuleCompiler({ cwd, output });
+	const moduleCompiler = new ModuleCompiler({ cwd });
+	const compilations = createCaptureOutput(t, moduleCompiler, cwd);
 
 	moduleCompiler.run();
 	t.is(compilations.length, 1);
@@ -36,11 +37,11 @@ test(".watch() compiles included sources and incrementally emits updates", async
 		`
 	});
 
-	const [output, compilations] = createCaptureOutput(cwd);
-	const moduleCompiler = new ModuleCompiler({ cwd, output });
+	const moduleCompiler = new ModuleCompiler({ cwd });
+	const compilations = createCaptureOutput(t, moduleCompiler, cwd);
 
 	const watching = moduleCompiler.watch();
-	watching.on("error", error => t.fail(error));
+	moduleCompiler.on("watcherError", error => t.fail(error));
 
 	const first = await wait(() => compilations[0]);
 	t.is(Object.keys(first).length, 2);
@@ -55,7 +56,7 @@ test(".watch() compiles included sources and incrementally emits updates", async
 	t.is(Object.keys(second).length, 1);
 	t.true(second["foo.veco"].includes("6"));
 
-	await watching.close();
+	await disposeAsync(watching);
 
 	t.pass();
 });
@@ -68,13 +69,12 @@ test("includes and excludes specific files if configured", async t => {
 		"baz.ts": ""
 	});
 
-	const [output, compilations] = createCaptureOutput(cwd);
 	const moduleCompiler = new ModuleCompiler({
 		cwd,
-		output,
 		include: ["foo*"],
 		exclude: ["bar*"]
 	});
+	const compilations = createCaptureOutput(t, moduleCompiler, cwd);
 
 	moduleCompiler.run();
 
@@ -83,20 +83,23 @@ test("includes and excludes specific files if configured", async t => {
 	t.true("foo.veco" in compilations[0]);
 });
 
-export function createCaptureOutput(relativeTo: string): [ModuleCompilerOutput, Record<string, string>[]] {
+export function createCaptureOutput(t: ExecutionContext, source: ModuleCompiler, relativeTo: string): Record<string, string>[] {
 	let compilation: Record<string, string> = {};
 	const compilations: Record<string, string>[] = [];
 
-	return [
-		{
-			emit(filename: string, data: string) {
-				compilation[path.relative(relativeTo, filename).replace(/\\/g, "/")] = data;
-			},
-			done() {
-				compilations.push(compilation);
-				compilation = {};
-			}
-		},
-		compilations
-	];
+	source.on("file", (filename, data) => {
+		compilation[path.relative(relativeTo, filename).replace(/\\/g, "/")] = data;
+	});
+
+	source.on("done", (result) => {
+		if (result.tsDiagnostics.length > 0) {
+			throw Object.assign(new Error("unexpected ts diagnostics"), {
+				diagnostics: result.tsDiagnostics
+			});
+		}
+		compilations.push(compilation);
+		compilation = {};
+	});
+
+	return compilations;
 }

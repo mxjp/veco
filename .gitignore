@@ -1,3 +1,5 @@
 /node_modules
 /dist
-/test_out
+/test/out/**
+!/test/out/runtime.d.ts
+/example/**/*.svg

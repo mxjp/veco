@@ -167,7 +167,7 @@ export class LogWriter {
 	protected formatMessage(message: any[]) {
 		return message.map(value => {
 			return typeof value === "string" ? value : inspect(value, false, 15, true);
-		})
+		}).join(" ");
 	}
 
 	protected format(entry: LogEntry) {

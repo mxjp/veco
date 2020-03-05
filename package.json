@@ -4,7 +4,7 @@
 	"scripts": {
 		"compile": "tsc",
 		"compile:watch": "tsc -w",
-		"clean": "rimraf dist/**/* test_out/**/*",
+		"clean": "rimraf dist test/out/data test/out/src test/out/test",
 		"test": "npm run clean && tsc -p test/tsconfig.json && ava",
 		"test:watch": "npm run clean && concurrently -n tsc,ava \"tsc -p test/tsconfig.json -w\" \"ava -w\""
 	},
@@ -14,28 +14,31 @@
 		"@types/klaw-sync": "^6.0.0",
 		"@types/mkdirp": "^1.0.0",
 		"@types/node": "^13.7.6",
+		"@types/resolve": "^1.14.0",
 		"ava": "^3.5.0",
 		"concurrently": "^5.1.0",
 		"mkdirp": "^1.0.3",
 		"rimraf": "^3.0.2"
 	},
 	"dependencies": {
+		"@phylum/command": "^1.2.0",
 		"ansi-colors": "^4.1.1",
 		"anymatch": "^3.1.1",
 		"chokidar": "^3.3.1",
 		"escape-html": "^1.0.3",
 		"is-glob": "^4.0.1",
 		"klaw-sync": "^6.0.0",
+		"resolve": "^1.15.1",
 		"typescript": "^3.8.2",
 		"v8-compile-cache": "^2.1.0"
 	},
 	"ava": {
 		"verbose": true,
 		"files": [
-			"test_out/test/**/*-test.js"
+			"test/out/test/**/*-test.js"
 		],
 		"ignoredByWatcher": [
-			"test_out/data"
+			"test/out/data"
 		]
 	}
 }

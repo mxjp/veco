@@ -1,4 +1,4 @@
-import { parallel } from "./async";
+import { parallel, Async } from "./async";
 import { map } from "./iterables";
 import { Disposable } from "./disposable";
 
@@ -16,10 +16,16 @@ export type EventListener<T extends EventTypes, K extends keyof T> = (...args: A
 export type Event<A extends any[] = []> = { args: A, async: false };
 export type AsyncEvent<A extends any[] = []> = { args: A, async: true };
 
+export interface IEmitter<T extends EventTypes> {
+	on<K extends keyof T>(key: K, listener: EventListener<T, K>): EventListener<T, K>;
+	off<K extends keyof T>(key: K, listener: EventListener<T, K>): void;
+	hook<K extends keyof T>(key: K, listener: EventListener<T, K>): Disposable;
+}
+
 /**
  * A fully typed event emitter with support for lazy and async events.
  */
-export abstract class Emitter<T extends EventTypes> {
+export abstract class Emitter<T extends EventTypes> implements IEmitter<T> {
 	private readonly [LISTENERS] = new Map<keyof T, Set<EventListener<any, any>>>();
 
 	public on<K extends keyof T>(key: K, listener: EventListener<T, K>) {
@@ -51,14 +57,14 @@ export abstract class Emitter<T extends EventTypes> {
 	protected onSubscribe<K extends keyof T>(key: K, listener: EventListener<T, K>) {}
 	protected onUnsubscribe<K extends keyof T>(key: K, listener: EventListener<T, K>) {}
 
-	public emit<K extends keyof T>(key: KeyForEvent<T, K>, ...args: Args<T, K>) {
+	protected emit<K extends keyof T>(key: KeyForEvent<T, K>, ...args: Args<T, K>) {
 		const listeners = this[LISTENERS].get(key);
 		if (listeners !== undefined) {
 			listeners.forEach(listener => listener(...args));
 		}
 	}
 
-	public emitLazy<K extends keyof T>(key: KeyForEvent<T, K>, unwrap: () => Args<T, K>) {
+	protected emitLazy<K extends keyof T>(key: KeyForEvent<T, K>, unwrap: () => Args<T, K>) {
 		const listeners = this[LISTENERS].get(key);
 		if (listeners !== undefined && listeners.size > 0) {
 			const args = unwrap();
@@ -66,19 +72,18 @@ export abstract class Emitter<T extends EventTypes> {
 		}
 	}
 
-	public emitAsync<K extends keyof T>(key: KeyForAsyncEvent<T, K>, ...args: Args<T, K>) {
+	protected async emitAsync<K extends keyof T>(key: KeyForAsyncEvent<T, K>, ...args: Args<T, K>) {
 		const listeners = this[LISTENERS].get(key);
-		return listeners === undefined
-			? Promise.resolve()
-			: parallel(map(listeners, listener => listener(...args)));
+		if (listeners !== undefined) {
+			await parallel(map(listeners, listener => listener(...args)));
+		}
 	}
 
-	public emitAsyncLazy<K extends keyof T>(key: KeyForAsyncEvent<T, K>, unwrap: () => Args<T, K>) {
+	protected async emitAsyncLazy<K extends keyof T>(key: KeyForAsyncEvent<T, K>, unwrap: () => Args<T, K>) {
 		const listeners = this[LISTENERS].get(key);
 		if (listeners !== undefined && listeners.size > 0) {
 			const args = unwrap();
-			return parallel(map(listeners, listener => listener(...args)));
+			await parallel(map(listeners, listener => listener(...args)));
 		}
-		return Promise.resolve();
 	}
 }
