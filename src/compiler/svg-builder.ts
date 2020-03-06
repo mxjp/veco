@@ -24,25 +24,34 @@ export class SvgBuilder extends Emitter<{
 		this._target = format.target === undefined ? "dom" : format.target;
 		this._indent = format.indent === undefined ? "\t" : format.indent;
 		this._newline = format.newline === undefined ? "\n" : format.newline;
-
-		this._target = "xml";
 	}
 
 	private readonly _runtime: Runtime;
 	private readonly _target: SvgFormatTarget;
 	private readonly _indent: string;
 	private readonly _newline: string;
+	private _done = false;
 
 	public use(source: ModuleCompiler): Disposable {
 		const subscriptions = [
-			source.hook("file", this._runtime.writeFile.bind(this._runtime)),
+			source.hook("file", this._writeFile.bind(this)),
 			source.hook("done", this._run.bind(this))
 		];
 		return () => void subscriptions.forEach(dispose);
 	}
 
+	private _writeFile(filename: string, data: string) {
+		this._runtime.writeFile(filename, data);
+		if (this._done) {
+			this._runtime.runEntryModules();
+		}
+	}
+
 	private _run() {
-		this._runtime.runEntryModules();
+		if (!this._done) {
+			this._runtime.runEntryModules();
+			this._done = true;
+		}
 	}
 
 	private _emitElement(name: string, element: Element) {
