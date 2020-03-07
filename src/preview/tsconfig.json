@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"module": "ESNext",
+		"declaration": false,
+		"jsx": "react",
+		"jsxFactory": "foo"
+	},
+	"exclude": [],
+	"include": [
+		"."
+	]
+}
