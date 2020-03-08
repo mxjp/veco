@@ -40,7 +40,7 @@ export class RuntimeModule {
 	}
 
 	private _runtimeEmit(element: RuntimeApi.Element, name = this.name) {
-		this._emitCallback(path.resolve(this.dirname, name), element);
+		this._emitCallback(this.filename, path.resolve(this.dirname, name), element);
 	}
 
 	private _createContext() {
