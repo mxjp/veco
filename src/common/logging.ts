@@ -182,7 +182,7 @@ export class LogWriter {
 		const level = this.formatLevel(entry.level);
 		const time = this.formatTime(entry.time);
 		const channel = this.formatChannel(entry.channel);
-		return `[${level} ${time}${channel ? " " + channel : ""}] ${this.formatMessage(entry.message)}`;
+		return `[${level} ${time}${channel ? " " + channel : ""}] ${this.formatMessage(entry.message)}\n`;
 	}
 
 	protected write(entry: LogEntry) {

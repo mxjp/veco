@@ -2,11 +2,12 @@
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
-import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs } from "../compiler/config";
+import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, SvgTarget } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
 import { SvgBuilder } from "../compiler/svg-builder";
 import { writeOutput } from "../compiler/file-emitter";
+import { PreviewServer } from "../compiler/preview-server";
 
 bootstrap(async (argv, log, logWriter) => {
 	const baseArgs = new CommandSpec([
@@ -24,7 +25,8 @@ bootstrap(async (argv, log, logWriter) => {
 				{ name: "watch", alias: "w", type: "flag" },
 				{ name: "verbose", alias: "v", type: "flag" }
 			]).parse(argv);
-			const { moduleCompiler, svgBuilder } = await setupCompiler(log, args);
+			const config = await getConfig(log, args);
+			const { moduleCompiler, svgBuilder } = await setupCompiler(log, config, args);
 			writeOutput(svgBuilder);
 			if (args.watch) {
 				moduleCompiler.watch();
@@ -40,8 +42,13 @@ bootstrap(async (argv, log, logWriter) => {
 				{ name: "verbose", alias: "v", type: "flag" },
 				...PREVIEW_CONFIG_ARG_SPECS
 			]).parse(argv);
-			const { config, moduleCompiler, svgBuilder } = await setupCompiler(log, args);
-			// TODO: Start preview server.
+			const config = await getConfig(log, args);
+			config.target = SvgTarget.dom;
+			const { moduleCompiler, svgBuilder } = await setupCompiler(log, config, args);
+			const server = new PreviewServer(config, log.fork("preview"));
+			server.use(svgBuilder);
+			const info = await server.start();
+			log.info(info);
 			moduleCompiler.watch();
 			break;
 		}
@@ -50,15 +57,20 @@ bootstrap(async (argv, log, logWriter) => {
 	}
 });
 
-async function setupCompiler(log: Log, args: any) {
+async function getConfig(log: Log, args: any) {
 	const config = await readConfigFile(args.config);
 	applyConfigArgs(config, args);
 	log.debug("Using config:", config);
+	return config;
+}
 
+async function setupCompiler(log: Log, config: Config, args: any) {
 	const moduleCompiler = new ModuleCompiler(config, log.fork("module-compiler"));
+	moduleCompiler.on("watcherError", error => log.error("watcher error:", error));
+	moduleCompiler.on("watchRuntimeError", error => log.error("runtime error:", error));
 
 	const svgBuilder = new SvgBuilder(config, log.fork("svg-builder"));
 	svgBuilder.use(moduleCompiler);
 
-	return { config, moduleCompiler, svgBuilder };
+	return { moduleCompiler, svgBuilder };
 }

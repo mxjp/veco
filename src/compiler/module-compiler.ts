@@ -8,7 +8,8 @@ import { Config, isSource } from "./config";
 import { Log } from "../common/logging";
 
 export class ModuleCompiler extends Emitter<{
-	watchError: Event<[any]>,
+	watcherError: Event<[any]>,
+	watchRuntimeError: Event<[any]>,
 	file: Event<[string, string]>,
 	done: Event<[ModuleCompilerResult]>
 }> {
@@ -63,7 +64,11 @@ export class ModuleCompiler extends Emitter<{
 			if (isSource(this.config, name)) {
 				rootNames.add(path.join(this.config.cwd, name));
 				if (program !== undefined) {
-					run.call(this);
+					try {
+						run.call(this);
+					} catch (error) {
+						this.emit("watchRuntimeError", error);
+					}
 				}
 			}
 		});
@@ -76,16 +81,24 @@ export class ModuleCompiler extends Emitter<{
 		});
 
 		watcher.on("ready", () => {
-			run.call(this);
+			try {
+				run.call(this);
+			} catch (error) {
+				this.emit("watchRuntimeError", error);
+			}
 		});
 
 		watcher.on("change", name => {
 			if (program !== undefined && isSource(this.config, name)) {
-				run.call(this);
+				try {
+					run.call(this);
+				} catch (error) {
+					this.emit("watchRuntimeError", error);
+				}
 			}
 		});
 
-		watcher.on("error", error => this.emit("watchError", error));
+		watcher.on("error", error => this.emit("watcherError", error));
 
 		return () => watcher.close();
 	}
