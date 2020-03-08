@@ -1,9 +1,9 @@
 import { Async, then } from "./async";
 import { Log, LogWriter } from "./logging";
 
-export function bootstrap(main: (argv: string[], log: Log) => Async) {
+export function bootstrap(main: (argv: string[], log: Log, logWriter: LogWriter) => Async) {
 	const log = Log.create();
-	new LogWriter({ log, output: process.stderr });
+	const logWriter = new LogWriter({ log, output: process.stderr });
 
 	process.on("uncaughtException", error => {
 		log.fork("bootstrap").error("uncaught exception:", error);
@@ -15,7 +15,7 @@ export function bootstrap(main: (argv: string[], log: Log) => Async) {
 		process.exit(1);
 	});
 
-	then(main(process.argv.slice(2), log), () => {}, error => {
+	then(main(process.argv.slice(2), log, logWriter), () => {}, error => {
 		log.fork("bootstrap").error(error);
 		process.exit(1);
 	});

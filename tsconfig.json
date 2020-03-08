@@ -12,6 +12,7 @@
 		"src"
 	],
 	"exclude": [
-		"src/preview"
+		"src/preview",
+		"example/**"
 	]
 }

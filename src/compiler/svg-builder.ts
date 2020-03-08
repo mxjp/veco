@@ -1,35 +1,27 @@
+import { Emitter, Event } from "../common/emitter";
+import { Config, SvgTarget } from "./config";
+import { Log } from "../common/logging";
 import { Runtime } from "./runtime";
 import { ModuleCompiler } from "./module-compiler";
 import { Disposable, dispose } from "../common/disposable";
-import { Emitter, Event } from "../common/emitter";
-import { Element } from "./runtime/element";
-import { FileEmitter } from "./file-emitter";
+import { Element } from "../runtime";
 import * as htmlEscape from "escape-html";
 
-/**
- * The svg builder is used as compiler output to
- * run compiled modules and emit svg instances.
- */
 export class SvgBuilder extends Emitter<{
 	file: Event<[string, string]>
-}> implements FileEmitter {
-	public constructor(options: SvgBuilderOptions) {
+}> {
+	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
-		this._runtime = new Runtime({
-			emitElement: this._emitElement.bind(this)
-		});
+		this._runtime = new Runtime(log.fork("runtime"));
+		this._runtime.on("emit", this._emit.bind(this));
 
-		// TODO: Move normalization and validation to config module.
-		const format = options.format || {};
-		this._target = format.target === undefined ? "dom" : format.target;
-		this._indent = format.indent === undefined ? "\t" : format.indent;
-		this._newline = format.newline === undefined ? "\n" : format.newline;
+		this._newline = config.format.newline;
+		this._indent = config.format.indent;
 	}
 
 	private readonly _runtime: Runtime;
-	private readonly _target: SvgFormatTarget;
-	private readonly _indent: string;
 	private readonly _newline: string;
+	private readonly _indent: string;
 	private _done = false;
 
 	public use(source: ModuleCompiler): Disposable {
@@ -38,25 +30,6 @@ export class SvgBuilder extends Emitter<{
 			source.hook("done", this._run.bind(this))
 		];
 		return () => void subscriptions.forEach(dispose);
-	}
-
-	private _writeFile(filename: string, data: string) {
-		this._runtime.writeFile(filename, data);
-		if (this._done) {
-			this._runtime.runEntryModules();
-		}
-	}
-
-	private _run() {
-		if (!this._done) {
-			this._runtime.runEntryModules();
-			this._done = true;
-		}
-	}
-
-	private _emitElement(name: string, element: Element) {
-		const data = this.formatSvg(element);
-		this.emit("file", name + ".svg", data);
 	}
 
 	protected formatValue(key: string, value: any): string {
@@ -85,36 +58,42 @@ export class SvgBuilder extends Emitter<{
 			: `${indent}<${element.tagName}${props}/>`;
 	}
 
-	protected formatSvg(root: Element) {
-		switch (this._target) {
-			case "xml": {
-				root = new Element(
-					root.tagName,
+	protected formatSvg(element: Element) {
+		switch (this.config.target) {
+			case SvgTarget.xml:
+				element = new Element(
+					element.tagName,
 					Object.assign({
 						xmlns: "http://www.w3.org/2000/svg"
-					}, root.props),
-					root.children
+					}, element.props),
+					element.children
 				);
-				return `<?xml version="1.0" encoding="utf-8"?>${this._newline || "\n"}${this.formatElement("", root)}${this._newline}`;
-			}
+				return `<?xml version="1.0" encoding="utf-8"?>${this._newline || "\n"}${this.formatElement("", element)}${this._newline}`;
 
-			case "dom": {
-				return this.formatElement("", root);
-			}
+			case SvgTarget.dom:
+				return this.formatElement("", element);
 
-			default: throw new TypeError("invalid target");
+			default:
+				throw new TypeError("invalid target");
 		}
 	}
-}
 
-export interface SvgBuilderOptions {
-	readonly format?: SvgFormat;
-}
+	private _writeFile(filename: string, data: string) {
+		this._runtime.writeFile(filename, data);
+		if (this._done) {
+			this._runtime.run();
+		}
+	}
 
-export interface SvgFormat {
-	readonly target?: SvgFormatTarget;
-	readonly indent?: string;
-	readonly newline?: string;
-}
+	private _run() {
+		if (!this._done) {
+			this._runtime.run();
+			this._done = true;
+		}
+	}
 
-export type SvgFormatTarget = "xml" | "dom";
+	private _emit(name: string, element: Element) {
+		const filename = name + ".svg";
+		this.emit("file", filename, this.formatSvg(element));
+	}
+}

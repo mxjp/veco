@@ -2,4 +2,4 @@
 /dist
 /test/out/**
 !/test/out/runtime.d.ts
-/example/**/*.svg
+/example/dist

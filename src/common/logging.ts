@@ -131,8 +131,16 @@ const LOG_LEVEL_LABELS = new Map<LogLevel, string>([
 export class LogWriter {
 	private readonly _output: NodeJS.WriteStream;
 	private readonly _colors: boolean;
-	private readonly _level: LogLevel;
 	private readonly _logSubscription: Disposable;
+	private _level: LogLevel;
+
+	public get level() {
+		return this._level;
+	}
+
+	public set level(value: LogLevel) {
+		this._level = value;
+	}
 
 	public constructor({
 		log,

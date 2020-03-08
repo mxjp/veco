@@ -1,20 +1,21 @@
 import * as path from "path";
-import { Runtime, EmitElementCallback } from ".";
-import { createContext, runInContext } from "vm";
-import { Element } from "./element";
+import { Runtime, RuntimeEmitCallback } from "./runtime";
+import { runInContext, createContext } from "vm";
+import * as RuntimeApi from "../runtime";
 
-export class Module {
+export class RuntimeModule {
 	public readonly dependants = new Set<string>();
 	public readonly dirname: string;
 	public readonly name: string;
 
 	private _exports: any = {};
+	private _runtime: null | typeof RuntimeApi = null;
 
 	public constructor(
 		public readonly runtime: Runtime,
 		public readonly filename: string,
 		public readonly data: string,
-		private readonly _emitElement: EmitElementCallback
+		private readonly _emitCallback: RuntimeEmitCallback
 	) {
 		this.dirname = path.dirname(filename);
 		this.name = path.basename(filename, path.extname(filename));
@@ -25,8 +26,21 @@ export class Module {
 		return this._exports;
 	}
 
+	public getRuntimeAPI(): typeof RuntimeApi {
+		if (!this._runtime) {
+			this._runtime = Object.assign(Object.create(RuntimeApi), <typeof RuntimeApi> {
+				emit: this._runtimeEmit.bind(this)
+			});
+		}
+		return this._runtime!;
+	}
+
 	private _require(request: string) {
 		return this.runtime.require(request, this);
+	}
+
+	private _runtimeEmit(element: RuntimeApi.Element, name = this.name) {
+		this._emitCallback(path.resolve(this.dirname, name), element);
 	}
 
 	private _createContext() {
@@ -43,18 +57,10 @@ export class Module {
 				}
 			},
 
+			console,
+
 			get exports() {
 				return module._exports;
-			},
-
-			render(tagName: string, props?: Record<string, any> | null, ...children: any[]) {
-				return new Element(tagName, props || {}, children);
-			},
-
-			emit(element: Element, name = module.name) {
-				if (module.runtime.isStale(module)) {
-					module._emitElement(path.resolve(module.dirname, name), element);
-				}
 			}
 		});
 	}

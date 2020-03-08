@@ -16,16 +16,24 @@ export type EventListener<T extends EventTypes, K extends keyof T> = (...args: A
 export type Event<A extends any[] = []> = { args: A, async: false };
 export type AsyncEvent<A extends any[] = []> = { args: A, async: true };
 
-export interface IEmitter<T extends EventTypes> {
-	on<K extends keyof T>(key: K, listener: EventListener<T, K>): EventListener<T, K>;
-	off<K extends keyof T>(key: K, listener: EventListener<T, K>): void;
-	hook<K extends keyof T>(key: K, listener: EventListener<T, K>): Disposable;
+export type IEventListener<A extends any[]> = (...args: A) => void;
+export interface IEmitter<K, A extends any[]> {
+	on(key: K, listener: IEventListener<A>): IEventListener<A>;
+	off(key: K, listener: IEventListener<A>): void;
+	hook(key: K, listener: IEventListener<A>): Disposable;
+}
+
+export type IAsyncEventListener<A extends any[]> = (...args: A) => Promise<any> | void | undefined;
+export interface IAsyncEmitter<K, A extends any[]> {
+	on(key: K, listener: IAsyncEventListener<A>): IEventListener<A>;
+	off(key: K, listener: IAsyncEventListener<A>): void;
+	hook(key: K, listener: IAsyncEventListener<A>): Disposable;
 }
 
 /**
  * A fully typed event emitter with support for lazy and async events.
  */
-export abstract class Emitter<T extends EventTypes> implements IEmitter<T> {
+export abstract class Emitter<T extends EventTypes> {
 	private readonly [LISTENERS] = new Map<keyof T, Set<EventListener<any, any>>>();
 
 	public on<K extends keyof T>(key: K, listener: EventListener<T, K>) {
