@@ -20,6 +20,10 @@ export const client = new class extends Emitter<{
 			socket.addEventListener("close", () => {
 				setTimeout(connect, 1000);
 			});
+			socket.addEventListener("open", () => {
+				client._svgs.clear();
+				client.emit("update");
+			});
 			socket.addEventListener("message", e => {
 				const msg = JSON.parse(e.data);
 				switch (msg.type) {
