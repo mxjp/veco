@@ -4,26 +4,24 @@ import { promises as fs } from "fs";
 import { parse } from "json5";
 import createTester, { Tester } from "anymatch";
 
-export class Config {
-	public constructor(
-		public readonly cwd: string,
-		public readonly filename: string,
-		public readonly compilerOptions: CompilerOptions,
-		public readonly sourceTester: Tester,
-		public readonly include: string[],
-		public readonly includeTester: Tester,
-		public readonly exclude: string[],
-		public readonly excludeTester: Tester,
-		public readonly target: SvgTarget,
-		public readonly format: SvgFormat
-	) {}
+export interface Config {
+	readonly cwd: string,
+	readonly filename: string,
+	readonly compilerOptions: CompilerOptions,
+	readonly sourceTester: Tester;
+	readonly include: string[],
+	readonly includeTester: Tester;
+	readonly exclude: string[],
+	readonly excludeTester: Tester;
+	readonly target: SvgTarget;
+	readonly format: SvgFormat;
+}
 
-	public isSource(filename: string) {
-		if (path.isAbsolute(filename)) {
-			filename = path.relative(this.cwd, filename);
-		}
-		return this.sourceTester(filename) && this.includeTester(filename) && !this.excludeTester(filename);
+export function isSource(config: Config, filename: string) {
+	if (path.isAbsolute(filename)) {
+		filename = path.relative(config.cwd, filename);
 	}
+	return config.sourceTester(filename) && config.includeTester(filename) && !config.excludeTester(filename);
 }
 
 export interface CompilerOptions extends ts.CompilerOptions {
@@ -41,7 +39,7 @@ export interface SvgFormat {
 	readonly newline: string;
 }
 
-export async function getConfig(filename?: string) {
+export async function readConfigFile(filename?: string): Promise<Config> {
 	// TODO: Improve ts error handling and diagnostics.
 	// TODO: Add validation.
 
@@ -75,7 +73,7 @@ export async function getConfig(filename?: string) {
 		throw convertedCompilerOptions.errors;
 	}
 
-	const compilerOptions = Object.assign(<ts.CompilerOptions> {
+	const compilerOptions = <CompilerOptions> Object.assign(<ts.CompilerOptions> {
 		module: ts.ModuleKind.CommonJS,
 		target: ts.ScriptTarget.ES2019,
 		jsx: ts.JsxEmit.React,
@@ -107,19 +105,19 @@ export async function getConfig(filename?: string) {
 	const formatIndent = jsonFormat.indent === undefined ? "\t" : jsonFormat.indent;
 	const formatNewline = jsonFormat.newline === undefined ? "\n" : jsonFormat.newline;
 
-	return new Config(
+	return {
 		cwd,
 		filename,
-		<CompilerOptions> compilerOptions,
+		compilerOptions,
 		sourceTester,
 		include,
 		includeTester,
 		exclude,
 		excludeTester,
 		target,
-		{
+		format: {
 			indent: formatIndent,
 			newline: formatNewline
 		}
-	)
+	};
 }

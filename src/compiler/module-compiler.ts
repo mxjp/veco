@@ -4,7 +4,7 @@ import * as walk from "klaw-sync";
 import { watch } from "chokidar";
 import { AsyncDisposable } from "../common/disposable";
 import { Emitter, Event } from "../common/emitter";
-import { Config } from "./config";
+import { Config, isSource } from "./config";
 import { Log } from "../common/logging";
 
 export class ModuleCompiler extends Emitter<{
@@ -18,7 +18,7 @@ export class ModuleCompiler extends Emitter<{
 
 	public async run() {
 		const rootNames = walk(this.config.cwd, {
-			filter: item => this.config.isSource(item.path),
+			filter: item => isSource(this.config, item.path),
 			nodir: true,
 			traverseAll: true
 		}).map(item => item.path);
@@ -60,7 +60,7 @@ export class ModuleCompiler extends Emitter<{
 		});
 
 		watcher.on("add", name => {
-			if (this.config.isSource(name)) {
+			if (isSource(this.config, name)) {
 				rootNames.add(path.join(this.config.cwd, name));
 				if (program !== undefined) {
 					run.call(this);
@@ -69,7 +69,7 @@ export class ModuleCompiler extends Emitter<{
 		});
 
 		watcher.on("unlink", name => {
-			if (this.config.isSource(name)) {
+			if (isSource(this.config, name)) {
 				rootNames.delete(path.join(this.config.cwd, name));
 			}
 			// TODO: Emit deleted file event before next "done" event is emitted.
@@ -80,7 +80,7 @@ export class ModuleCompiler extends Emitter<{
 		});
 
 		watcher.on("change", name => {
-			if (program !== undefined && this.config.isSource(name)) {
+			if (program !== undefined && isSource(this.config, name)) {
 				run.call(this);
 			}
 		});

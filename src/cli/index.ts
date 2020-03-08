@@ -2,7 +2,7 @@
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
-import { getConfig } from "../compiler/config";
+import { readConfigFile } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
 import { SvgBuilder } from "../compiler/svg-builder";
@@ -50,7 +50,7 @@ bootstrap(async (argv, log, logWriter) => {
 });
 
 async function createRenderer(log: Log, args: any) {
-	const config = await getConfig(args.config);
+	const config = await readConfigFile(args.config);
 	log.debug("Using config:", config);
 
 	const moduleCompiler = new ModuleCompiler(config, log.fork("module-compiler"));
