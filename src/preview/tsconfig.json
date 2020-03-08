@@ -4,10 +4,11 @@
 		"module": "ESNext",
 		"declaration": false,
 		"jsx": "react",
-		"jsxFactory": "foo"
+		"jsxFactory": "h"
 	},
 	"exclude": [],
 	"include": [
-		"."
+		".",
+		"../common"
 	]
 }

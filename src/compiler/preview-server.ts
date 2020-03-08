@@ -6,6 +6,7 @@ import { AddressInfo } from "net";
 import { Emitter } from "../common/emitter";
 import { Log } from "../common/logging";
 import { SvgBuilder } from "./svg-builder";
+import * as WebSocket from "ws";
 
 export class PreviewServer extends Emitter<{
 }> {
@@ -13,10 +14,17 @@ export class PreviewServer extends Emitter<{
 		super();
 		this._app = express();
 		this._server = createServer(this._app);
+		this._wss = new WebSocket.Server({ server: this._server });
+		this._wss.on("connection", socket => {
+			for (const [filename, data] of this._svgs) {
+				socket.send(JSON.stringify({ type: "svg", filename, data }));
+			}
+		});
 	}
 
 	private readonly _app: express.Express;
 	private readonly _server: Server;
+	private readonly _wss: WebSocket.Server;
 
 	private readonly _svgs = new Map<string, string>();
 
@@ -24,7 +32,11 @@ export class PreviewServer extends Emitter<{
 		return source.hook("file", (filename, data) => {
 			filename = path.relative(this.config.compilerOptions.outDir, filename);
 			this._svgs.set(filename, data);
-			// TODO: Send file update to web sockets.
+			for (const socket of this._wss.clients) {
+				if (socket.readyState === WebSocket.OPEN) {
+					socket.send(JSON.stringify({ type: "svg", filename, data }));
+				}
+			}
 		});
 	}
 

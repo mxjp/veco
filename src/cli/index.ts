@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "v8-compile-cache";
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
