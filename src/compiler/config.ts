@@ -3,18 +3,20 @@ import * as ts from "typescript";
 import { promises as fs } from "fs";
 import { parse } from "json5";
 import createTester, { Tester } from "anymatch";
+import { ArgumentSpec } from "@phylum/command";
 
 export interface Config {
-	readonly cwd: string,
-	readonly filename: string,
-	readonly compilerOptions: CompilerOptions,
-	readonly sourceTester: Tester;
-	readonly include: string[],
-	readonly includeTester: Tester;
-	readonly exclude: string[],
-	readonly excludeTester: Tester;
-	readonly target: SvgTarget;
-	readonly format: SvgFormat;
+	cwd: string,
+	filename: string,
+	compilerOptions: CompilerOptions,
+	sourceTester: Tester;
+	include: string[],
+	includeTester: Tester;
+	exclude: string[],
+	excludeTester: Tester;
+	target: SvgTarget;
+	format: SvgFormat;
+	preview: PreviewConfig;
 }
 
 export function isSource(config: Config, filename: string) {
@@ -25,8 +27,8 @@ export function isSource(config: Config, filename: string) {
 }
 
 export interface CompilerOptions extends ts.CompilerOptions {
-	readonly rootDir: string;
-	readonly outDir: string;
+	rootDir: string;
+	outDir: string;
 }
 
 export enum SvgTarget {
@@ -34,9 +36,30 @@ export enum SvgTarget {
 	dom = "dom"
 }
 
+const SVG_TARGETS = new Set<SvgTarget>([SvgTarget.xml, SvgTarget.dom]);
+
 export interface SvgFormat {
-	readonly indent: string;
-	readonly newline: string;
+	indent: string;
+	newline: string;
+}
+
+export interface PreviewConfig {
+	port: number;
+	address: string;
+}
+
+export const PREVIEW_CONFIG_ARG_SPECS: ArgumentSpec[] = [
+	{ name: "preview-port", type: "number" },
+	{ name: "preview-address" }
+];
+
+export function applyConfigArgs(config: Config, args: any) {
+	if (args["preview-port"]) {
+		config.preview.port = args["preview-port"];
+	}
+	if (args["preview-address"]) {
+		config.preview.address = args["preview-address"];
+	}
 }
 
 export async function readConfigFile(filename?: string): Promise<Config> {
@@ -97,13 +120,17 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 	const excludeTester = createTester(exclude);
 
 	const target = json.target || "xml";
-	if (![SvgTarget.xml, SvgTarget.dom].includes(target)) {
+	if (!SVG_TARGETS.has(target)) {
 		throw new TypeError(`target must be "xml" or "dom".`);
 	}
 
 	const jsonFormat = json.format || {};
 	const formatIndent = jsonFormat.indent === undefined ? "\t" : jsonFormat.indent;
 	const formatNewline = jsonFormat.newline === undefined ? "\n" : jsonFormat.newline;
+
+	const jsonPreview = json.preview || {};
+	const previewPort = jsonPreview.port || 3000;
+	const previewAddress = jsonPreview.address || "::1";
 
 	return {
 		cwd,
@@ -118,6 +145,10 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 		format: {
 			indent: formatIndent,
 			newline: formatNewline
+		},
+		preview: {
+			port: previewPort,
+			address: previewAddress
 		}
 	};
 }

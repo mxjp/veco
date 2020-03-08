@@ -2,7 +2,7 @@
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
-import { readConfigFile } from "../compiler/config";
+import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
 import { SvgBuilder } from "../compiler/svg-builder";
@@ -24,7 +24,7 @@ bootstrap(async (argv, log, logWriter) => {
 				{ name: "watch", alias: "w", type: "flag" },
 				{ name: "verbose", alias: "v", type: "flag" }
 			]).parse(argv);
-			const { moduleCompiler, svgBuilder } = await createRenderer(log, args);
+			const { moduleCompiler, svgBuilder } = await setupCompiler(log, args);
 			writeOutput(svgBuilder);
 			if (args.watch) {
 				moduleCompiler.watch();
@@ -37,9 +37,10 @@ bootstrap(async (argv, log, logWriter) => {
 		case "preview": {
 			const args = new CommandSpec([
 				{ name: "config", alias: "c" },
-				{ name: "verbose", alias: "v", type: "flag" }
+				{ name: "verbose", alias: "v", type: "flag" },
+				...PREVIEW_CONFIG_ARG_SPECS
 			]).parse(argv);
-			const { config, moduleCompiler, svgBuilder } = await createRenderer(log, args);
+			const { config, moduleCompiler, svgBuilder } = await setupCompiler(log, args);
 			// TODO: Start preview server.
 			moduleCompiler.watch();
 			break;
@@ -49,8 +50,9 @@ bootstrap(async (argv, log, logWriter) => {
 	}
 });
 
-async function createRenderer(log: Log, args: any) {
+async function setupCompiler(log: Log, args: any) {
 	const config = await readConfigFile(args.config);
+	applyConfigArgs(config, args);
 	log.debug("Using config:", config);
 
 	const moduleCompiler = new ModuleCompiler(config, log.fork("module-compiler"));
