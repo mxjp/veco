@@ -1,5 +1,4 @@
 /node_modules
 /dist
-/test/out/**
-!/test/out/runtime.d.ts
+/test/out/
 /example/dist

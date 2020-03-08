@@ -92,8 +92,9 @@ export class SvgBuilder extends Emitter<{
 		}
 	}
 
-	private _emit(name: string, element: Element) {
+	private _emit(moduleFilename: string, name: string, element: Element) {
 		const filename = name + ".svg";
 		this.emit("file", filename, this.formatSvg(element));
+		// TODO: Emit another event with the module filename included.
 	}
 }

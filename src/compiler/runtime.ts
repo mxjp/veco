@@ -7,7 +7,7 @@ import { Element } from "../runtime";
 const RUNTIME_API_PATH = require.resolve("../runtime");
 
 export class Runtime extends Emitter<{
-	emit: Event<[string, Element]>
+	emit: Event<[string, string, Element]>
 }> {
 	public constructor(public readonly log: Log) {
 		super();
@@ -16,8 +16,8 @@ export class Runtime extends Emitter<{
 	private readonly _files = new Map<string, string>();
 	private readonly _modules = new Map<string, RuntimeModule>();
 
-	private readonly _emitCallback = (name: string, element: Element) => {
-		this.emit("emit", name, element);
+	private readonly _emitCallback: RuntimeEmitCallback = (moduleFilename: string, name: string, element: Element) => {
+		this.emit("emit", moduleFilename, name, element);
 	};
 
 	public writeFile(filename: string, data: string) {
@@ -83,7 +83,7 @@ export class Runtime extends Emitter<{
 	}
 }
 
-export type RuntimeEmitCallback = (name: string, element: Element) => void;
+export type RuntimeEmitCallback = (moduleFilename: string, name: string, element: Element) => void;
 
 function * possibleModuleFilenames(request: string) {
 	yield request;
