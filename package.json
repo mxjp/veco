@@ -13,6 +13,9 @@
 		"test": "npm run clean && tsc -p test/tsconfig.json && ava",
 		"test:watch": "npm run clean && concurrently -n tsc,ava \"tsc -p test/tsconfig.json -w\" \"ava -w\""
 	},
+	"bin": {
+		"veco": "./dist/cli/index.js"
+	},
 	"devDependencies": {
 		"@types/escape-html": "0.0.20",
 		"@types/express": "^4.17.3",
