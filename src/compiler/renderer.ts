@@ -74,24 +74,19 @@ export class Renderer extends Emitter<{
 			: `${indent}<${element.tagName}${props}/>`;
 	}
 
-	protected formatSvg(element: Element) {
-		switch (this.config.target) {
-			case SvgTarget.xml:
-				element = new Element(
-					element.tagName,
-					Object.assign({
-						xmlns: "http://www.w3.org/2000/svg"
-					}, element.props),
-					element.children
-				);
-				return `<?xml version="1.0" encoding="utf-8"?>${this._newline || "\n"}${this.formatElement("", element)}${this._newline}`;
+	protected formatXmlSvg(element: Element) {
+		element = new Element(
+			element.tagName,
+			Object.assign({
+				xmlns: "http://www.w3.org/2000/svg"
+			}, element.props),
+			element.children
+		);
+		return `<?xml version="1.0" encoding="utf-8"?>${this._newline || "\n"}${this.formatElement("", element)}${this._newline}`;
+	}
 
-			case SvgTarget.dom:
-				return this.formatElement("", element);
-
-			default:
-				throw new TypeError("invalid target");
-		}
+	protected formatDomSvg(element: Element) {
+		return this.formatElement("", element);
 	}
 
 	private _writeFile(filename: string, data: string) {
@@ -113,10 +108,13 @@ export class Renderer extends Emitter<{
 	}
 
 	private _emit({ moduleFilename, name, element }: RuntimeEmitEvent) {
+		const data = this.config.target === SvgTarget.xml
+			? this.formatXmlSvg(element)
+			: this.formatDomSvg(element);
+
 		const filename = name + ".svg";
-		const data = this.formatSvg(element);
 		this.emit("file", { filename, data });
-		this.emit("emit", { moduleFilename, filename, data })
+		this.emit("emit", { moduleFilename, filename, data });
 	}
 
 	private _invalidate({ moduleFilename, deleted }: RuntimeInvalidateEvent) {

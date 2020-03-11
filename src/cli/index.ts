@@ -3,7 +3,7 @@ import "v8-compile-cache";
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
-import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, SvgTarget } from "../compiler/config";
+import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, SvgTarget, RENDER_CONFIG_ARG_SPECS } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
 import { Renderer } from "../compiler/renderer";
@@ -24,7 +24,8 @@ bootstrap(async (argv, log, logWriter) => {
 			const args = new CommandSpec([
 				{ name: "config", alias: "c" },
 				{ name: "watch", alias: "w", type: "flag" },
-				{ name: "verbose", alias: "v", type: "flag" }
+				{ name: "verbose", alias: "v", type: "flag" },
+				...RENDER_CONFIG_ARG_SPECS
 			]).parse(argv);
 			const config = await getConfig(log, args);
 			const { moduleCompiler, svgBuilder } = await setupCompiler(log, config, args);

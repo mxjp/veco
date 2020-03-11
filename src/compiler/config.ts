@@ -52,9 +52,18 @@ export interface PreviewConfig {
 	address: string;
 }
 
+export const RENDER_CONFIG_ARG_SPECS: ArgumentSpec[] = [
+	{ name: "include", multiple: true },
+	{ name: "exclude", multiple: true },
+	{ name: "out-dir" },
+	{ name: "target" }
+];
+
 export const PREVIEW_CONFIG_ARG_SPECS: ArgumentSpec[] = [
 	{ name: "preview-port", type: "number" },
-	{ name: "preview-address" }
+	{ name: "preview-address" },
+	{ name: "include", multiple: true },
+	{ name: "exclude", multiple: true }
 ];
 
 export function applyConfigArgs(config: Config, args: any) {
@@ -63,6 +72,21 @@ export function applyConfigArgs(config: Config, args: any) {
 	}
 	if (args["preview-address"]) {
 		config.preview.address = args["preview-address"];
+	}
+	if (args.include) {
+		config.includeTester = createTester(config.include = args.include);
+	}
+	if (args.exclude) {
+		config.excludeTester = createTester(config.exclude = args.exclude);
+	}
+	if (args["out-dir"]) {
+		config.compilerOptions.outDir = path.resolve(args["out-dir"]);
+	}
+	if (args.target) {
+		if (!SVG_TARGETS.has(args.target)) {
+			throw new TypeError(`--target must be one of: ${Array.from(SVG_TARGETS).join(", ")}`);
+		}
+		config.target = args.target;
 	}
 }
 
@@ -125,7 +149,7 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 
 	const target = json.target || "xml";
 	if (!SVG_TARGETS.has(target)) {
-		throw new TypeError(`target must be "xml" or "dom".`);
+		throw new TypeError(`target must be one of: ${Array.from(SVG_TARGETS).join(", ")}`);
 	}
 
 	const jsonFormat = json.format || {};
