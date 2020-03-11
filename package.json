@@ -12,7 +12,8 @@
 		"compile:preview:watch": "webpack-dev-server --config src/preview/webpack.config.js",
 		"clean": "rimraf dist test/out/data test/out/src test/out/test",
 		"test": "npm run clean && tsc -p test/tsconfig.json && ava",
-		"test:watch": "npm run clean && concurrently -n tsc,ava \"tsc -p test/tsconfig.json -w\" \"ava -w\""
+		"test:watch": "npm run clean && concurrently -n tsc,ava \"tsc -p test/tsconfig.json -w\" \"ava -w\"",
+		"prepack": "npm run clean && npm run compile"
 	},
 	"bin": {
 		"veco": "./dist/cli/index.js"
