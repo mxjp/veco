@@ -1,13 +1,15 @@
 # VECO
 A toolchain for creating **ve**ctor graphics from **co**de for developers :)
 
-## Why?
-From a developer's perspective, large sets of svg icons are hard to create and maintain as
-even modern graphic software makes it hard to reuse parts or parametize things.
+**This is an early proof of concept. Use at your own risk!**
 
-## How?
-Veco solves this problem by allowing you to generate typed procedural svgs from code using typescript and a customized runtime:
+## Why/how?
+From a developer's perspective, large sets of svg icons are hard to create and maintain as
+even modern graphic software makes it hard to reuse parts or parametize things. Veco solves all
+these problems by allowing you to write svgs in typescript:
 ```tsx
+import { render, emit } from "veco";
+
 emit(<svg viewBox="0 0 100 100">
 	{[[20, "red"], [40, "blue"], [60, "green"]].map(([radius, fill]) => {
 		return <circle cx="50" cy="50" r={radius} fill={fill} />
@@ -15,130 +17,85 @@ emit(<svg viewBox="0 0 100 100">
 </svg>)
 ```
 
-**This is an early proof of concept. Use at your own risk!**
+> **Note:** `emit(..)` will throw when used outside of the veco runtime.
 
 <br>
 
 
 
-# Implementation Roadmap
+# Getting started
 
-## v1.0
-+ Require **tsconfig.json** to exist.
-+ Provide a utility for creating and validating the projects tsconfig.
-+ Use runtime specific extensions:
-	+ Use `.veco` for veco compiled modules.
-	+ Fallback to node's require when `.js .mjs .cjs .node .json` files are imported.
-+ Utilize typescript's watch mode.
-+ Emit svgs from code to support procedural generation of svgs.
-+ Api for emitting raw files to things like meta information.
-+ Provide style utilities:
-	+ Evaluate *jss*.
-	+ or write an own solution that is simple to use.
-+ Provide type declarations for the runtime.
-+ Plugin API for extending the runtime for things like configuration.
-+ Formatting options:
-	+ Output type: `svg` | `markup`
-	+ Pretty/minify
-	+ Line breaks
-	+ Indentation
-+ Disallow async generation for now (support for promises may be added in the future).
-+ Compiler functionality:
-	+ `render` - For emitting svgs.
-	+ `compile` - For building libraries.
-+ Allow configuring veco specific settings:
-	+ via `tsconfig.json`'s `veco` property
-	+ via `veconf.json` files
-	+ via command line.
+## Installation
+```shell
+# Install the veco compiler:
+npm i -g veco
+```
 
-## v1.1
-+ Live preview server that hosts rendered svgs and a web client to view them.
-	+ Icon selector.
-	+ Allow changing preview background color.
-	+ Zoom levels (`view-box`, `fit-window`, `manual`)
-	+ Drag controls.
-+ Build a vscode extension that uses the live preview and functions just like vscode's markdown preview.
-	+ Communicate with preview web client to delegate functionality like setting background color or icon selection to vscode's native ui.
-	+ When opening, show the first icon that is emitted by the file in the current open editor if any.
-
-## v1.x
-+ Strict mode to disallow non-standard elements or syntax.
-+ Add an `init` command to create a new project or add the toolchain to an existing project.
-
-## v2.x
-+ Async node & attribute value support.
-
-<br>
-
-
-
-# Sample
-The following code shows how the first version could be used:
+## Configuration
+Create a configuration file for your project:
 ```js
-// tsconfig.json
+// veco.json5
 {
-	"compileOptions": {
-		"target": "ES2019",
-		"rootDir": "src",
-		"outDir": "dist"
+	// Note, that all properties are optional and
+	// the following values represent the defaults:
+
+	// An object with typescript compiler options:
+	compilerOptions: {
+		target: "es2019",
+		jsxFactory: "render"
 	},
-	"include": [
-		"src"
-	]
-}
-```
-```tsx
-// src/icon.tsx
-import { circles } from "./circles";
 
-emit(
-	<svg viewBox="0 0 100 100">
-		{stylesheet({
-			".pair": {
-				fill: "#007fff"
-			}
-		})}
+	// An array with globs to include:
+	include: ["**"],
 
-		{circles(50, 50, 20)}
+	// An array with globs to exclude:
+	exclude: [],
 
-		<circle style={{ fill: "#ff7f00" }} />
-	</svg>,
+	// The render target.
+	//  - xml - Standalone xml svg files.
+	//  - dom - Svg files for direct use in html documents.
+	//  - png - PNG images.
+	//  - jpeg - JPEG images.
+	target: "xml",
 
-	// Optional filename without extension relative to the corresponding output path:
-	// - The actual extension of the emitted file depends on the compiler output type.
-	"icon"
-);
-```
-```tsx
-// src/circles.tsx
-export function circles(x: number, y: number, r: number) {
-	return [
-		<circle class="pair" cx={x + 25} cy={y + 25} r={r} />
-		<circle class="pair" cx={x - 25} cy={y - 25} r={r} />
-	];
+	// Render quality used for jpeg images:
+	quality: 1,
+
+	// The pixel scale used for PNG and JPEG images:
+	scale: 1,
+
+	// An object with format options:
+	format: {
+		indent: "\t",
+		newline: "\n"
+	},
+
+	// Settings for the preview server:
+	preview: {
+		port: 3000,
+		address: "::1"
+	}
 }
 ```
 
-### Rendering svgs
+## Command line
 ```shell
-> veco render --format=pretty [--watch]
-```
-```xml
-<!-- produces: dist/icon.svg -->
-<svg>
-	<style>
+# Render all svgs:
+veco render
 
-	</style>
-</svg>
+# Start the preview server:
+veco preview
 ```
 
-### Compiling a library
-```shell
-> veco compile [--watch]
-```
-Produces `.veco` and `.d.ts` files in the configured dist folder.
+The following arguments can be used to overwrite the configuration:
 
-### Running the preview server
-```shell
-> veco preview --open
-```
+| Argument | Description | Commands |
+|-|-|-|
+| `--include ./src/foo/**` | Specify one or more globs to include files | render, preview |
+| `--exclude **/test*` | Specify one or more globs to exclude files | render, preview |
+| `--out-dir ./out` | Specify a different output directory | render |
+| `--target png` | Specify a different render target | render |
+| `--quality 0.84` | Specify a different JPEG render quality | render |
+| `--scale 1.234` | Specify a different scale for PNG or JPEG images | render |
+| `--preview-port 3000` | Use a different preview server port | preview |
+| `--preview-address ::1` | Use a different preview server address | preview |
