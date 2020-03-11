@@ -26,7 +26,8 @@ exports.default = ({ prod } = {}) => {
 					{ loader: "sass-loader", options: {
 						implementation: require("sass")
 					} }
-				] }
+				] },
+				{ test: /\.svg$/, use: "url-loader" }
 			]
 		},
 		plugins: [

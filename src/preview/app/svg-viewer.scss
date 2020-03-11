@@ -1,0 +1,30 @@
+
+.viewport {
+	flex-grow: 1;
+	position: relative;
+	overflow: hidden;
+
+	display: grid;
+	grid-template-columns: 1fr 0px 1fr;
+	grid-template-rows: 1fr 0px 1fr;
+
+	background: url("../assets/svg-viewer-background.svg");
+	background-size: 20px;
+}
+
+.center {
+	grid-row: 2 / 3;
+	grid-column: 2 / 3;
+	overflow: visible;
+	position: relative;
+}
+
+.container {
+	position: absolute;
+	top: calc(var(--height) / -2);
+	left: calc(var(--width) / -2);
+	width: var(--width);
+	height: var(--height);
+
+	box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
+}

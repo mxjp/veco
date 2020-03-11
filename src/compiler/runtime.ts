@@ -6,8 +6,20 @@ import { Element } from "../runtime";
 
 const RUNTIME_API_PATH = require.resolve("../runtime");
 
+export interface RuntimeEmitEvent {
+	readonly moduleFilename: string;
+	readonly name: string;
+	readonly element: Element;
+}
+
+export interface RuntimeInvalidateEvent {
+	readonly moduleFilename: string;
+	readonly deleted: boolean;
+}
+
 export class Runtime extends Emitter<{
-	emit: Event<[string, string, Element]>
+	emit: Event<[RuntimeEmitEvent]>,
+	invalidate: Event<[RuntimeInvalidateEvent]>
 }> {
 	public constructor(public readonly log: Log) {
 		super();
@@ -17,18 +29,26 @@ export class Runtime extends Emitter<{
 	private readonly _modules = new Map<string, RuntimeModule>();
 
 	private readonly _emitCallback: RuntimeEmitCallback = (moduleFilename: string, name: string, element: Element) => {
-		this.emit("emit", moduleFilename, name, element);
+		this.emit("emit", { moduleFilename, name, element });
 	};
 
 	public writeFile(filename: string, data: string) {
-		(function invalidate(this: Runtime, filename: string) {
-			const module = this._modules.get(filename);
-			if (module) {
-				this._modules.delete(filename);
-				module.dependants.forEach(filename => invalidate.call(this, filename));
-			}
-		}).call(this, filename);
+		this._invalidate(filename, false);
 		this._files.set(filename, data);
+	}
+
+	public deleteFile(filename: string) {
+		this._invalidate(filename, true);
+		this._files.delete(filename);
+	}
+
+	private _invalidate(filename: string, deleted: boolean) {
+		const module = this._modules.get(filename);
+		if (module) {
+			this.emit("invalidate", { moduleFilename: filename, deleted });
+			this._modules.delete(filename);
+			module.dependants.forEach(filename => this._invalidate(filename, deleted));
+		}
 	}
 
 	public run() {

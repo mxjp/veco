@@ -26,6 +26,10 @@ export function isSource(config: Config, filename: string) {
 	return config.sourceTester(filename) && config.includeTester(filename) && !config.excludeTester(filename);
 }
 
+export function getOutputFromSource(config: Config, filename: string) {
+	return path.join(config.compilerOptions.outDir, path.relative(config.compilerOptions.rootDir, filename)).replace(/\.tsx?$/, ".js");
+}
+
 export interface CompilerOptions extends ts.CompilerOptions {
 	rootDir: string;
 	outDir: string;

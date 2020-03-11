@@ -4,14 +4,23 @@ import * as walk from "klaw-sync";
 import { watch } from "chokidar";
 import { AsyncDisposable } from "../common/disposable";
 import { Emitter, Event } from "../common/emitter";
-import { Config, isSource } from "./config";
+import { Config, isSource, getOutputFromSource } from "./config";
 import { Log } from "../common/logging";
+
+export interface ModuleCompilerDeleteEvent {
+	readonly moduleFilename: string;
+}
+
+export interface ModuleCompilerDoneEvent {
+	readonly diagnostics: ts.Diagnostic[];
+}
 
 export class ModuleCompiler extends Emitter<{
 	watcherError: Event<[any]>,
 	watchRuntimeError: Event<[any]>,
 	file: Event<[string, string]>,
-	done: Event<[ModuleCompilerResult]>
+	delete: Event<[ModuleCompilerDeleteEvent]>,
+	done: Event<[ModuleCompilerDoneEvent]>
 }> {
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
@@ -74,10 +83,11 @@ export class ModuleCompiler extends Emitter<{
 		});
 
 		watcher.on("unlink", name => {
-			if (isSource(this.config, name)) {
-				rootNames.delete(path.join(this.config.cwd, name));
+			const filename = path.join(this.config.cwd, name);
+			if (isSource(this.config, filename)) {
+				rootNames.delete(filename);
+				this.emit("delete", { moduleFilename: getOutputFromSource(this.config, filename) });
 			}
-			// TODO: Emit deleted file event before next "done" event is emitted.
 		});
 
 		watcher.on("ready", () => {
@@ -103,7 +113,7 @@ export class ModuleCompiler extends Emitter<{
 		return () => watcher.close();
 	}
 
-	private _createResult(emitResult: ts.EmitResult, program: ts.Program): ModuleCompilerResult {
+	private _createResult(emitResult: ts.EmitResult, program: ts.Program): ModuleCompilerDoneEvent {
 		return {
 			diagnostics: [
 				...ts.getPreEmitDiagnostics(program),
@@ -115,8 +125,4 @@ export class ModuleCompiler extends Emitter<{
 	private _emitFile(filename: string, data: string) {
 		this.emit("file", path.normalize(filename), data);
 	}
-}
-
-export interface ModuleCompilerResult {
-	readonly diagnostics: ts.Diagnostic[];
 }

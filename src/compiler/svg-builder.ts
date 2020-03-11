@@ -1,19 +1,34 @@
 import { Emitter, Event } from "../common/emitter";
 import { Config, SvgTarget } from "./config";
 import { Log } from "../common/logging";
-import { Runtime } from "./runtime";
-import { ModuleCompiler } from "./module-compiler";
+import { Runtime, RuntimeEmitEvent, RuntimeInvalidateEvent } from "./runtime";
+import { ModuleCompiler, ModuleCompilerDeleteEvent } from "./module-compiler";
 import { Disposable, dispose } from "../common/disposable";
 import { Element } from "../runtime";
 import * as htmlEscape from "escape-html";
+import { FileEvent } from "./file-emitter";
+
+export interface SvgEmitEvent {
+	readonly moduleFilename: string;
+	readonly filename: string;
+	readonly data: string;
+}
+
+export interface SvgInvalidateEvent {
+	readonly moduleFilename: string;
+	readonly deleted: boolean;
+}
 
 export class SvgBuilder extends Emitter<{
-	file: Event<[string, string]>
+	file: Event<[FileEvent]>,
+	emit: Event<[SvgEmitEvent]>,
+	invalidate: Event<[SvgInvalidateEvent]>
 }> {
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
 		this._runtime = new Runtime(log.fork("runtime"));
 		this._runtime.on("emit", this._emit.bind(this));
+		this._runtime.on("invalidate", this._invalidate.bind(this));
 
 		this._newline = config.format.newline;
 		this._indent = config.format.indent;
@@ -27,6 +42,7 @@ export class SvgBuilder extends Emitter<{
 	public use(source: ModuleCompiler): Disposable {
 		const subscriptions = [
 			source.hook("file", this._writeFile.bind(this)),
+			source.hook("delete", this._deleteFile.bind(this)),
 			source.hook("done", this._run.bind(this))
 		];
 		return () => void subscriptions.forEach(dispose);
@@ -85,6 +101,10 @@ export class SvgBuilder extends Emitter<{
 		}
 	}
 
+	private _deleteFile({ moduleFilename }: ModuleCompilerDeleteEvent) {
+		this._runtime.deleteFile(moduleFilename);
+	}
+
 	private _run() {
 		if (!this._done) {
 			this._runtime.run();
@@ -92,9 +112,14 @@ export class SvgBuilder extends Emitter<{
 		}
 	}
 
-	private _emit(moduleFilename: string, name: string, element: Element) {
+	private _emit({ moduleFilename, name, element }: RuntimeEmitEvent) {
 		const filename = name + ".svg";
-		this.emit("file", filename, this.formatSvg(element));
-		// TODO: Emit another event with the module filename included.
+		const data = this.formatSvg(element);
+		this.emit("file", { filename, data });
+		this.emit("emit", { moduleFilename, filename, data })
+	}
+
+	private _invalidate({ moduleFilename, deleted }: RuntimeInvalidateEvent) {
+		this.emit("invalidate", { moduleFilename, deleted });
 	}
 }
