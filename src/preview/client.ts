@@ -42,12 +42,13 @@ export const client = new class extends Emitter<{
 	private _onMessage(msg: Message) {
 		switch (msg.type) {
 			case "emit": {
-				this._svgs.put(msg.filename, msg.data);
+				console.log(msg);
+				this._svgs.put(msg.name, msg.data);
 				const index = this._modules.get(msg.moduleFilename);
 				if (index) {
-					index.add(msg.filename);
+					index.add(msg.name);
 				} else {
-					this._modules.set(msg.moduleFilename, new Set([msg.filename]));
+					this._modules.set(msg.moduleFilename, new Set([msg.name]));
 				}
 				this.emit("update");
 				break;

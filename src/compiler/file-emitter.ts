@@ -5,7 +5,7 @@ import { writeFileSync } from "fs";
 
 export interface FileEvent {
 	readonly filename: string;
-	readonly data: string;
+	readonly data: string | Buffer;
 }
 
 export type FileEmitter = IEmitter<"file", [FileEvent]>;
@@ -13,6 +13,6 @@ export type FileEmitter = IEmitter<"file", [FileEvent]>;
 export function writeOutput(source: FileEmitter) {
 	return source.hook("file", ({ filename, data }) => {
 		mkdir(path.dirname(filename));
-		writeFileSync(filename, data, "utf8");
+		writeFileSync(filename, data, typeof data === "string" ? "utf8" : undefined);
 	});
 }

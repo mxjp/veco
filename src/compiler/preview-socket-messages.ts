@@ -2,7 +2,7 @@
 export interface EmitMessage {
 	readonly type: "emit";
 	readonly moduleFilename: string;
-	readonly filename: string;
+	readonly name: string;
 	readonly data: string;
 }
 

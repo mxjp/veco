@@ -3,7 +3,7 @@ import "v8-compile-cache";
 
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
-import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, SvgTarget, RENDER_CONFIG_ARG_SPECS } from "../compiler/config";
+import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, RenderTarget, RENDER_CONFIG_ARG_SPECS } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
 import { Renderer } from "../compiler/renderer";
@@ -45,7 +45,7 @@ bootstrap(async (argv, log, logWriter) => {
 				...PREVIEW_CONFIG_ARG_SPECS
 			]).parse(argv);
 			const config = await getConfig(log, args);
-			config.target = SvgTarget.dom;
+			config.target = RenderTarget.dom;
 			const { moduleCompiler, svgBuilder } = await setupCompiler(log, config, args);
 			const server = new PreviewServer(config, log.fork("preview"));
 			server.use(svgBuilder);

@@ -1,5 +1,5 @@
 import { Emitter, Event } from "../common/emitter";
-import { Config, SvgTarget } from "./config";
+import { Config, RenderTarget } from "./config";
 import { Log } from "../common/logging";
 import { Runtime, RuntimeEmitEvent, RuntimeInvalidateEvent } from "./runtime";
 import { ModuleCompiler, ModuleCompilerDeleteEvent } from "./module-compiler";
@@ -7,10 +7,11 @@ import { Disposable, dispose } from "../common/disposable";
 import { Element } from "../runtime";
 import * as htmlEscape from "escape-html";
 import { FileEvent } from "./file-emitter";
+import { parseViewBox } from "./properties/view-box";
 
 export interface RendererEmitEvent {
 	readonly moduleFilename: string;
-	readonly filename: string;
+	readonly name: string;
 	readonly data: string;
 }
 
@@ -22,7 +23,8 @@ export interface RendererInvalidateEvent {
 export class Renderer extends Emitter<{
 	file: Event<[FileEvent]>,
 	emit: Event<[RendererEmitEvent]>,
-	invalidate: Event<[RendererInvalidateEvent]>
+	invalidate: Event<[RendererInvalidateEvent]>,
+	encoderStreamError: Event<[any]>
 }> {
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
@@ -108,13 +110,51 @@ export class Renderer extends Emitter<{
 	}
 
 	private _emit({ moduleFilename, name, element }: RuntimeEmitEvent) {
-		const data = this.config.target === SvgTarget.xml
-			? this.formatXmlSvg(element)
-			: this.formatDomSvg(element);
+		const target = this.config.target;
 
-		const filename = name + ".svg";
-		this.emit("file", { filename, data });
-		this.emit("emit", { moduleFilename, filename, data });
+		const data = target === RenderTarget.dom
+			? this.formatDomSvg(element)
+			: this.formatXmlSvg(element);
+
+		switch (target) {
+			case RenderTarget.png:
+			case RenderTarget.jpeg: {
+				const { createCanvas, Image } = require("canvas") as typeof import("canvas");
+				const viewBox = parseViewBox(element.props.viewBox);
+
+				const scale = this.config.scale;
+
+				const image = new Image();
+				image.src = `data:image/svg+xml;base64,${Buffer.from(data, "utf8").toString("base64")}`;
+				image.width = viewBox.width * scale;
+				image.height = viewBox.height * scale;
+
+				const canvas = createCanvas(viewBox.width * scale, viewBox.height * scale);
+				const ctx = canvas.getContext("2d");
+				ctx.drawImage(image, 0, 0);
+
+				const parts: Buffer[] = [];
+				const stream = target === RenderTarget.png
+					? canvas.createPNGStream()
+					: canvas.createJPEGStream({ quality: this.config.quality });
+
+				stream.on("error", error => this.emit("encoderStreamError", error));
+				stream.on("data", data => parts.push(data));
+				stream.on("end", () => {
+					const filename = name + (target === RenderTarget.png ? ".png" : ".jpg");
+					this.emit("file", { filename, data: Buffer.concat(parts) });
+				});
+
+				break;
+			}
+
+			default: {
+				const filename = name + ".svg";
+				this.emit("file", { filename, data });
+				break;
+			}
+		}
+		this.emit("emit", { moduleFilename, name, data });
 	}
 
 	private _invalidate({ moduleFilename, deleted }: RuntimeInvalidateEvent) {

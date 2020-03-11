@@ -4,6 +4,7 @@ import { promises as fs } from "fs";
 import { parse } from "json5";
 import createTester, { Tester } from "anymatch";
 import { ArgumentSpec } from "@phylum/command";
+import { isNumber } from "util";
 
 export interface Config {
 	cwd: string,
@@ -14,7 +15,9 @@ export interface Config {
 	includeTester: Tester;
 	exclude: string[],
 	excludeTester: Tester;
-	target: SvgTarget;
+	target: RenderTarget;
+	quality: number;
+	scale: number;
 	format: SvgFormat;
 	preview: PreviewConfig;
 }
@@ -35,12 +38,19 @@ export interface CompilerOptions extends ts.CompilerOptions {
 	outDir: string;
 }
 
-export enum SvgTarget {
+export enum RenderTarget {
 	xml = "xml",
-	dom = "dom"
+	dom = "dom",
+	png = "png",
+	jpeg = "jpeg"
 }
 
-const SVG_TARGETS = new Set<SvgTarget>([SvgTarget.xml, SvgTarget.dom]);
+const RENDER_TARGETS = new Set<RenderTarget>([
+	RenderTarget.xml,
+	RenderTarget.dom,
+	RenderTarget.png,
+	RenderTarget.jpeg
+]);
 
 export interface SvgFormat {
 	indent: string;
@@ -56,7 +66,9 @@ export const RENDER_CONFIG_ARG_SPECS: ArgumentSpec[] = [
 	{ name: "include", multiple: true },
 	{ name: "exclude", multiple: true },
 	{ name: "out-dir" },
-	{ name: "target" }
+	{ name: "target" },
+	{ name: "quality", type: "number" },
+	{ name: "scale", type: "number" }
 ];
 
 export const PREVIEW_CONFIG_ARG_SPECS: ArgumentSpec[] = [
@@ -83,10 +95,22 @@ export function applyConfigArgs(config: Config, args: any) {
 		config.compilerOptions.outDir = path.resolve(args["out-dir"]);
 	}
 	if (args.target) {
-		if (!SVG_TARGETS.has(args.target)) {
-			throw new TypeError(`--target must be one of: ${Array.from(SVG_TARGETS).join(", ")}`);
+		if (!RENDER_TARGETS.has(args.target)) {
+			throw new TypeError(`--target must be one of: ${Array.from(RENDER_TARGETS).join(", ")}`);
 		}
 		config.target = args.target;
+	}
+	if (args.quality !== undefined) {
+		if (args.quality <= 0 || args.quality > 1) {
+			throw new TypeError(`--quality must be a number greater than 0 and smaller or equal to 1.`);
+		}
+		config.quality = args.quality;
+	}
+	if (args.scale !== undefined) {
+		if (args.scale <= 0) {
+			throw new TypeError(`--scale must be a number greater than 0.`);
+		}
+		config.scale = args.scale;
 	}
 }
 
@@ -148,8 +172,18 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 	const excludeTester = createTester(exclude);
 
 	const target = json.target || "xml";
-	if (!SVG_TARGETS.has(target)) {
-		throw new TypeError(`target must be one of: ${Array.from(SVG_TARGETS).join(", ")}`);
+	if (!RENDER_TARGETS.has(target)) {
+		throw new TypeError(`target must be one of: ${Array.from(RENDER_TARGETS).join(", ")}`);
+	}
+
+	const quality = json.quality === undefined ? 1 : json.quality;
+	if (!isNumber(quality) || quality <= 0 || quality > 1) {
+		throw new TypeError(`quality must be a number greater than 0 and smaller or equal to 1.`);
+	}
+
+	const scale = json.scale === undefined ? 1 : json.scale;
+	if (!isNumber(scale) || scale <= 0) {
+		throw new TypeError(`scale must be a number greater than 0.`);
 	}
 
 	const jsonFormat = json.format || {};
@@ -170,6 +204,8 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 		exclude,
 		excludeTester,
 		target,
+		quality,
+		scale,
 		format: {
 			indent: formatIndent,
 			newline: formatNewline

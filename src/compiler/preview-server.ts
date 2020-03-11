@@ -8,7 +8,7 @@ import { Log } from "../common/logging";
 import { Renderer } from "./renderer";
 import * as WebSocket from "ws";
 import { Disposable, dispose } from "../common/disposable";
-import { Message } from "./preview-socket-messages";
+import { Message, EmitMessage } from "./preview-socket-messages";
 
 interface Svg {
 	readonly moduleFilename: string;
@@ -26,10 +26,10 @@ export class PreviewServer extends Emitter<{
 		this._wss = new WebSocket.Server({ server: this._server });
 		this._wss.on("connection", socket => {
 			for (const [filename, svg] of this._svgs) {
-				socket.send(JSON.stringify({
+				socket.send(JSON.stringify(<EmitMessage> {
 					type: "emit",
 					moduleFilename: externalize(this.config.cwd, svg.moduleFilename),
-					filename: externalize(this.config.compilerOptions.outDir, filename),
+					name: externalize(this.config.compilerOptions.outDir, filename),
 					data: svg.data
 				}));
 			}
@@ -54,18 +54,18 @@ export class PreviewServer extends Emitter<{
 
 	public use(source: Renderer): Disposable {
 		const hooks = [
-			source.hook("emit", ({ moduleFilename, filename, data }) => {
-				this._svgs.set(filename, { moduleFilename, data });
+			source.hook("emit", ({ moduleFilename, name, data }) => {
+				this._svgs.set(name, { moduleFilename, data });
 				const index = this._svgByModuleIndex.get(moduleFilename);
 				if (index) {
-					index.add(filename);
+					index.add(name);
 				} else {
-					this._svgByModuleIndex.set(moduleFilename, new Set([filename]));
+					this._svgByModuleIndex.set(moduleFilename, new Set([name]));
 				}
 				this._send({
 					type: "emit",
 					moduleFilename: externalize(this.config.cwd, moduleFilename),
-					filename: externalize(this.config.compilerOptions.outDir, filename),
+					name: externalize(this.config.compilerOptions.outDir, name),
 					data
 				});
 			}),
