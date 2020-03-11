@@ -1,8 +1,8 @@
 
 export class Element {
 	public constructor(
-		public readonly tagName: string,
-		public readonly props: Record<string, any>,
-		public readonly children: any[]
+		public tagName: string,
+		public props: Record<string, any>,
+		public children: any[]
 	) {}
 }
