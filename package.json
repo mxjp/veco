@@ -7,7 +7,7 @@
 		"compile:watch": "concurrently npm:compile:lib:watch npm:compile:preview:watch",
 		"compile:lib": "tsc",
 		"compile:lib:watch": "tsc -w",
-		"compile:preview": "webpack --config src/preview/webpack.config.js",
+		"compile:preview": "webpack --config src/preview/webpack.config.js --env.prod",
 		"compile:preview:watch": "webpack-dev-server --config src/preview/webpack.config.js",
 		"clean": "rimraf dist test/out/data test/out/src test/out/test",
 		"test": "npm run clean && tsc -p test/tsconfig.json && ava",

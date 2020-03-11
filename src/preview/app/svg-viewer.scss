@@ -1,7 +1,16 @@
 
-.viewport {
+.viewer {
 	flex-grow: 1;
 	position: relative;
+}
+
+.viewport {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+
 	overflow: hidden;
 
 	display: grid;
@@ -10,6 +19,13 @@
 
 	background: url("../assets/svg-viewer-background.svg");
 	background-size: 20px;
+
+	user-select: none;
+	cursor: grab;
+}
+
+.viewport:active {
+	cursor: grabbing;
 }
 
 .center {
@@ -21,10 +37,13 @@
 
 .container {
 	position: absolute;
-	top: calc(var(--height) / -2);
-	left: calc(var(--width) / -2);
+	top: calc(var(--height) / -2 + var(--y));
+	left: calc(var(--width) / -2 + var(--x));
 	width: var(--width);
 	height: var(--height);
+
+	transform-origin: center;
+	transform: scale(var(--zoom));
 
 	box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.5);
 }

@@ -9,6 +9,7 @@ export interface EmitMessage {
 export interface InvalidateMessage {
 	readonly type: "invalidate";
 	readonly moduleFilename: string;
+	readonly deleted: boolean;
 }
 
 export type Message = EmitMessage | InvalidateMessage;

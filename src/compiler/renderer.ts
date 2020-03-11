@@ -8,21 +8,21 @@ import { Element } from "../runtime";
 import * as htmlEscape from "escape-html";
 import { FileEvent } from "./file-emitter";
 
-export interface SvgEmitEvent {
+export interface RendererEmitEvent {
 	readonly moduleFilename: string;
 	readonly filename: string;
 	readonly data: string;
 }
 
-export interface SvgInvalidateEvent {
+export interface RendererInvalidateEvent {
 	readonly moduleFilename: string;
 	readonly deleted: boolean;
 }
 
-export class SvgBuilder extends Emitter<{
+export class Renderer extends Emitter<{
 	file: Event<[FileEvent]>,
-	emit: Event<[SvgEmitEvent]>,
-	invalidate: Event<[SvgInvalidateEvent]>
+	emit: Event<[RendererEmitEvent]>,
+	invalidate: Event<[RendererInvalidateEvent]>
 }> {
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();

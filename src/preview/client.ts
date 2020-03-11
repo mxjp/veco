@@ -54,11 +54,13 @@ export const client = new class extends Emitter<{
 			}
 
 			case "invalidate": {
-				for (const filename of this._modules.get(msg.moduleFilename) || []) {
-					this._svgs.del(filename);
+				if (msg.deleted) {
+					for (const filename of this._modules.get(msg.moduleFilename) || []) {
+						this._svgs.del(filename);
+					}
+					this._modules.delete(msg.moduleFilename);
+					this.emit("update");
 				}
-				this._modules.delete(msg.moduleFilename);
-				this.emit("update");
 				break;
 			}
 

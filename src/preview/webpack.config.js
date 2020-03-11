@@ -33,7 +33,8 @@ exports.default = ({ prod } = {}) => {
 		plugins: [
 			new HtmlPlugin({
 				template: "./src/preview/index.html",
-				inject: "head"
+				inject: "head",
+				minify: { collapseWhitespace: !!prod }
 			}),
 			...(process.env.WEBPACK_DEV_SERVER ? [
 				new DefinePlugin({ "process.env.VECO_DEV_API": true })

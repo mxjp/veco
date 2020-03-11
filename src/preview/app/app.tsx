@@ -6,8 +6,14 @@ import { Layout } from "../components/layout";
 import { Navbar } from "./navbar";
 import { Directory } from "./directory";
 import { SvgViewer } from "./svg-viewer";
+import { ReadonlyDirEntry } from "../utility/virtual-store";
 
-export class App extends Component {
+export interface AppState {
+	route?: ReadonlyDirEntry<string>,
+	data?: string
+}
+
+export class App extends Component<{}, AppState> {
 	private _resources: Disposable[] = [];
 
 	public componentDidMount() {
@@ -21,7 +27,7 @@ export class App extends Component {
 		this._resources.forEach(dispose);
 	}
 
-	public render() {
+	public render(props: any, state: AppState) {
 		const current = client.svgs.get(router.pathStr);
 		return <Layout fill flex="col" separator>
 			<Navbar/>

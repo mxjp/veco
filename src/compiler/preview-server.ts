@@ -5,9 +5,10 @@ import { Server, createServer } from "http";
 import { AddressInfo } from "net";
 import { Emitter } from "../common/emitter";
 import { Log } from "../common/logging";
-import { SvgBuilder } from "./svg-builder";
+import { Renderer } from "./renderer";
 import * as WebSocket from "ws";
 import { Disposable, dispose } from "../common/disposable";
+import { Message } from "./preview-socket-messages";
 
 interface Svg {
 	readonly moduleFilename: string;
@@ -19,6 +20,8 @@ export class PreviewServer extends Emitter<{
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
 		this._app = express();
+		this._app.use(express.static(path.join(__dirname, "../preview")));
+
 		this._server = createServer(this._app);
 		this._wss = new WebSocket.Server({ server: this._server });
 		this._wss.on("connection", socket => {
@@ -40,7 +43,7 @@ export class PreviewServer extends Emitter<{
 	private readonly _svgs = new Map<string, Svg>();
 	private readonly _svgByModuleIndex = new Map<string, Set<string>>();
 
-	private _send(message: any) {
+	private _send(message: Message) {
 		const data = JSON.stringify(message);
 		for (const socket of this._wss.clients) {
 			if (socket.readyState === WebSocket.OPEN) {
@@ -49,7 +52,7 @@ export class PreviewServer extends Emitter<{
 		}
 	}
 
-	public use(source: SvgBuilder): Disposable {
+	public use(source: Renderer): Disposable {
 		const hooks = [
 			source.hook("emit", ({ moduleFilename, filename, data }) => {
 				this._svgs.set(filename, { moduleFilename, data });
@@ -66,7 +69,7 @@ export class PreviewServer extends Emitter<{
 					data
 				});
 			}),
-			source.hook("invalidate", ({ moduleFilename }) => {
+			source.hook("invalidate", ({ moduleFilename, deleted }) => {
 				const index = this._svgByModuleIndex.get(moduleFilename);
 				if (index) {
 					index.forEach(filename => this._svgs.delete(filename));
@@ -74,7 +77,8 @@ export class PreviewServer extends Emitter<{
 				this._svgByModuleIndex.delete(moduleFilename);
 				this._send({
 					type: "invalidate",
-					moduleFilename: externalize(this.config.cwd, moduleFilename)
+					moduleFilename: externalize(this.config.cwd, moduleFilename),
+					deleted
 				});
 			})
 		];

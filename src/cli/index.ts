@@ -6,7 +6,7 @@ import { bootstrap } from "../common/bootstrap";
 import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, SvgTarget } from "../compiler/config";
 import { ModuleCompiler } from "../compiler/module-compiler";
 import { LogLevel, Log } from "../common/logging";
-import { SvgBuilder } from "../compiler/svg-builder";
+import { Renderer } from "../compiler/renderer";
 import { writeOutput } from "../compiler/file-emitter";
 import { PreviewServer } from "../compiler/preview-server";
 
@@ -70,7 +70,7 @@ async function setupCompiler(log: Log, config: Config, args: any) {
 	moduleCompiler.on("watcherError", error => log.error("watcher error:", error));
 	moduleCompiler.on("watchRuntimeError", error => log.error("runtime error:", error));
 
-	const svgBuilder = new SvgBuilder(config, log.fork("svg-builder"));
+	const svgBuilder = new Renderer(config, log.fork("svg-builder"));
 	svgBuilder.use(moduleCompiler);
 
 	return { moduleCompiler, svgBuilder };
