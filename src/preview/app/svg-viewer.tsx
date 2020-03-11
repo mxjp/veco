@@ -30,7 +30,6 @@ export class SvgViewer extends Component<{
 
 	public componentDidMount() {
 		window.addEventListener("resize", this._onWindowResize);
-		// TODO: Register resize handler.
 	}
 
 	public componentWillUnmount() {
@@ -38,6 +37,7 @@ export class SvgViewer extends Component<{
 	}
 
 	public render() {
+		this._renderData(this._container);
 		return <Layout grow flex="col" separator>
 			<div class={styles.viewer}>
 				<div class={styles.viewport} onMouseDown={this._move} onWheel={this._zoom} ref={this._renderViewport}>
@@ -71,6 +71,7 @@ export class SvgViewer extends Component<{
 	}
 
 	private _renderData = (container: HTMLDivElement | null) => {
+		console.log("RENDER DATA");
 		if (container && container.innerHTML !== this.props.data) {
 			this._container = container;
 			if (this.props.data) {
