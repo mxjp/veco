@@ -3,6 +3,7 @@ import { Log } from "../common/logging";
 import { RuntimeModule } from "./runtime-module";
 import { Emitter, Event } from "../common/emitter";
 import { Element } from "../runtime";
+import { sync as resolve } from "resolve";
 
 const RUNTIME_API_PATH = require.resolve("../runtime");
 
@@ -81,7 +82,7 @@ export class Runtime extends Emitter<{
 		}
 
 		if (by) {
-			request = require.resolve(request);
+			request = resolve(request, { basedir: by.dirname });
 			if (request === RUNTIME_API_PATH) {
 				return by.getRuntimeAPI();
 			}
