@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import "v8-compile-cache";
 
+import * as path from "path";
 import { CommandSpec } from "@phylum/command";
 import { bootstrap } from "../common/bootstrap";
 import { readConfigFile, PREVIEW_CONFIG_ARG_SPECS, applyConfigArgs, Config, RenderTarget, RENDER_CONFIG_ARG_SPECS } from "../compiler/config";
@@ -11,8 +12,16 @@ import { writeOutput } from "../compiler/file-emitter";
 import { PreviewServer } from "../compiler/preview-server";
 import * as ts from "typescript";
 import { isIPv6 } from "net";
+import { sync as resolve } from "resolve";
 
 bootstrap(async (argv, log, logWriter) => {
+	try {
+		const entry = resolve("veco/dist/cli");
+		if (path.normalize(entry) !== path.normalize(__filename)) {
+			return import(entry);
+		}
+	} catch {}
+
 	const baseArgs = new CommandSpec([
 		{ name: "verbose", alias: "v", type: "flag" }
 	]).parse(argv, { partial: true });
