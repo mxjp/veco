@@ -24,7 +24,7 @@ export class Renderer extends Emitter<{
 	file: Event<[FileEvent]>,
 	emit: Event<[RendererEmitEvent]>,
 	invalidate: Event<[RendererInvalidateEvent]>,
-	encoderStreamError: Event<[any]>
+	error: Event<[any]>
 }> {
 	public constructor(public readonly config: Config, public readonly log: Log) {
 		super();
@@ -94,7 +94,11 @@ export class Renderer extends Emitter<{
 	private _writeFile(filename: string, data: string) {
 		this._runtime.writeFile(filename, data);
 		if (this._done) {
-			this._runtime.run();
+			try {
+				this._runtime.run();
+			} catch (error) {
+				this.emit("error", error);
+			}
 		}
 	}
 
@@ -104,7 +108,11 @@ export class Renderer extends Emitter<{
 
 	private _run() {
 		if (!this._done) {
-			this._runtime.run();
+			try {
+				this._runtime.run();
+			} catch (error) {
+				this.emit("error", error);
+			}
 			this._done = true;
 		}
 	}
@@ -138,7 +146,7 @@ export class Renderer extends Emitter<{
 					? canvas.createPNGStream()
 					: canvas.createJPEGStream({ quality: this.config.quality });
 
-				stream.on("error", error => this.emit("encoderStreamError", error));
+				stream.on("error", error => this.emit("error", error));
 				stream.on("data", data => parts.push(data));
 				stream.on("end", () => {
 					const filename = name + (target === RenderTarget.png ? ".png" : ".jpg");

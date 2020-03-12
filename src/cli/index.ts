@@ -93,6 +93,10 @@ async function setupCompiler(log: Log, config: Config, args: any) {
 
 	const svgBuilder = new Renderer(config, log.fork("svg-builder"));
 	svgBuilder.use(moduleCompiler);
+	svgBuilder.on("error", error => {
+		log.error(error);
+		process.exitCode = 1;
+	});
 
 	return { moduleCompiler, svgBuilder };
 }
