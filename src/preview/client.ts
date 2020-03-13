@@ -42,7 +42,6 @@ export const client = new class extends Emitter<{
 	private _onMessage(msg: Message) {
 		switch (msg.type) {
 			case "emit": {
-				console.log(msg);
 				this._svgs.put(msg.name, msg.data);
 				const index = this._modules.get(msg.moduleFilename);
 				if (index) {

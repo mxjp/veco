@@ -71,7 +71,6 @@ export class SvgViewer extends Component<{
 	}
 
 	private _renderData = (container: HTMLDivElement | null) => {
-		console.log("RENDER DATA");
 		if (container && container.innerHTML !== this.props.data) {
 			this._container = container;
 			if (this.props.data) {
