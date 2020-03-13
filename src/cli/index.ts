@@ -16,7 +16,7 @@ import { PreviewServer } from "../compiler/preview-server";
 
 bootstrap(async (argv, log, logWriter) => {
 	try {
-		const entry = resolve("veco/dist/cli");
+		const entry = resolve("veco/dist/cli", { basedir: process.cwd() });
 		if (path.normalize(entry) !== path.normalize(__filename)) {
 			return import(entry);
 		}
