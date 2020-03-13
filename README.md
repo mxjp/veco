@@ -27,8 +27,7 @@ emit(<svg viewBox="0 0 100 100">
 
 ## Installation
 ```shell
-# Install the veco compiler:
-npm i -g veco
+npm i -D veco
 ```
 
 ## Configuration
