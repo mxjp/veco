@@ -15,18 +15,20 @@ import { writeOutput } from "../compiler/file-emitter";
 import { PreviewServer } from "../compiler/preview-server";
 
 bootstrap(async (argv, log, logWriter) => {
-	try {
-		const entry = resolve("veco/dist/cli", { basedir: process.cwd() });
-		if (path.normalize(entry) !== path.normalize(__filename)) {
-			return import(entry);
-		}
-	} catch {}
-
 	const baseArgs = new CommandSpec([
 		{ name: "verbose", alias: "v", type: "flag" }
 	]).parse(argv, { partial: true });
 	if (baseArgs.verbose) {
 		logWriter.level = LogLevel.Debug;
+	}
+
+	try {
+		const entry = resolve("veco/dist/cli", { basedir: process.cwd() });
+		if (path.normalize(entry) !== path.normalize(__filename)) {
+			return import(entry);
+		}
+	} catch {
+		log.warn(`It is recommended to install veco locally using "npm install --save-dev veco"`);
 	}
 
 	const command = argv.shift();

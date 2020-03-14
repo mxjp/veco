@@ -90,6 +90,8 @@ The following arguments can be used to overwrite the configuration:
 
 | Argument | Description | Commands |
 |-|-|-|
+| `--config ./foo.json5` | Optional config file path | render, preview |
+| `--watch` | Watch for changes | render |
 | `--include ./src/foo/**` | Specify one or more globs to include files | render, preview |
 | `--exclude **/test*` | Specify one or more globs to exclude files | render, preview |
 | `--out-dir ./out` | Specify a different output directory | render |
@@ -98,3 +100,4 @@ The following arguments can be used to overwrite the configuration:
 | `--scale 1.234` | Specify a different scale for PNG or JPEG images | render |
 | `--preview-port 3000` | Use a different preview server port | preview |
 | `--preview-address ::1` | Use a different preview server address | preview |
+| `--verbose` | Enable verbose logging | *all* |

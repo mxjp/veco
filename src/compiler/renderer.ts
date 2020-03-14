@@ -4,7 +4,7 @@ import { Log } from "../common/logging";
 import { Runtime, RuntimeEmitEvent, RuntimeInvalidateEvent } from "./runtime";
 import { ModuleCompiler, ModuleCompilerDeleteEvent } from "./module-compiler";
 import { Disposable, dispose } from "../common/disposable";
-import { Element } from "../runtime";
+import { Element, ElementChild } from "../runtime";
 import * as htmlEscape from "escape-html";
 import { FileEvent } from "./file-emitter";
 import { parseViewBox } from "./properties/view-box";
@@ -54,11 +54,8 @@ export class Renderer extends Emitter<{
 		return htmlEscape(String(value));
 	}
 
-	protected formatChild(indent: string, child: any) {
-		if (child instanceof Element) {
-			return this.formatElement(indent, child);
-		}
-		return indent + String(child);
+	protected formatChild(indent: string, child: ElementChild) {
+		return child instanceof Element ? this.formatElement(indent, child) : indent + child;
 	}
 
 	protected formatElement(indent: string, element: Element): string {
@@ -66,7 +63,7 @@ export class Renderer extends Emitter<{
 			return ` ${key}="${this.formatValue(key, value)}"`;
 		}).join("");
 		const childIndent = indent + this._indent;
-		const children = element.children.flat(Infinity).map(child => {
+		const children = element.children.map(child => {
 			return this.formatChild(childIndent, child);
 		});
 		return children.length > 0
