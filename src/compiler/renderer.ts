@@ -97,8 +97,8 @@ export class Renderer extends Emitter<{
 		return data;
 	}
 
-	protected formatValue(key: string, value: any): string {
-		return htmlEscape(String(value));
+	protected formatValue(key: string, value: string): string {
+		return htmlEscape(value);
 	}
 
 	protected formatChild(indent: string, child: ElementChild) {
