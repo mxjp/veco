@@ -8,6 +8,7 @@ import { Element, ElementChild } from "../runtime";
 import * as htmlEscape from "escape-html";
 import { FileEvent } from "./file-emitter";
 import { parseViewBox } from "./properties/view-box";
+import * as SVGO from "svgo";
 
 export interface RendererEmitEvent {
 	readonly moduleFilename: string;
@@ -48,6 +49,52 @@ export class Renderer extends Emitter<{
 			source.hook("done", this._run.bind(this))
 		];
 		return () => void subscriptions.forEach(dispose);
+	}
+
+	protected async optimizeData(data: string) {
+		const svgo = new SVGO({
+			floatPrecision: 4,
+			plugins: [
+				{ cleanupAttrs: true },
+				{ removeDoctype: false },
+				{ removeXMLNS: false },
+				{ removeXMLProcInst: false },
+				{ removeComments: true },
+				{ removeMetadata: true },
+				{ removeTitle: true },
+				{ removeDesc: true },
+				{ removeUselessDefs: true },
+				{ removeEmptyAttrs: true },
+				{ removeEmptyAttrs: true },
+				{ removeHiddenElems: true },
+				{ removeEmptyText: true },
+				{ removeEmptyContainers: true },
+				{ removeViewBox: false },
+				{ cleanupEnableBackground: true },
+				{ minifyStyles: true },
+				{ convertStyleToAttrs: true },
+				{ convertColors: true },
+				{ convertPathData: true },
+				{ convertTransform: true },
+				{ removeUnknownsAndDefaults: true },
+				{ removeNonInheritableGroupAttrs: true },
+				{ removeUselessStrokeAndFill: true },
+				{ removeUnusedNS: true },
+				{ cleanupIDs: false },
+				{ cleanupNumericValues: true },
+				{ cleanupListOfValues: true },
+				{ moveElemsAttrsToGroup: true },
+				{ moveGroupAttrsToElems: true },
+				{ collapseGroups: true },
+				{ removeRasterImages: false },
+				{ mergePaths: true },
+				{ convertShapeToPath: true },
+				{ sortDefsChildren: true }
+			]
+		});
+		data = (await svgo.optimize(data)).data;
+
+		return data;
 	}
 
 	protected formatValue(key: string, value: any): string {
@@ -115,51 +162,57 @@ export class Renderer extends Emitter<{
 	}
 
 	private _emit({ moduleFilename, name, element }: RuntimeEmitEvent) {
-		const target = this.config.target;
+		(async () => {
+			const target = this.config.target;
 
-		const data = target === RenderTarget.dom
-			? this.formatDomSvg(element)
-			: this.formatXmlSvg(element);
+			let data = target === RenderTarget.dom
+				? this.formatDomSvg(element)
+				: this.formatXmlSvg(element);
 
-		switch (target) {
-			case RenderTarget.png:
-			case RenderTarget.jpeg: {
-				const { createCanvas, Image } = require("canvas") as typeof import("canvas");
-				const viewBox = parseViewBox(element.props.viewBox);
+			data = await this.optimizeData(data);
 
-				const scale = this.config.scale;
+			switch (target) {
+				case RenderTarget.png:
+				case RenderTarget.jpeg: {
+					const { createCanvas, Image } = require("canvas") as typeof import("canvas");
+					const viewBox = parseViewBox(element.props.viewBox);
 
-				const image = new Image();
-				image.src = `data:image/svg+xml;base64,${Buffer.from(data, "utf8").toString("base64")}`;
-				image.width = viewBox.width * scale;
-				image.height = viewBox.height * scale;
+					const scale = this.config.scale;
 
-				const canvas = createCanvas(viewBox.width * scale, viewBox.height * scale);
-				const ctx = canvas.getContext("2d");
-				ctx.drawImage(image, 0, 0);
+					const image = new Image();
+					image.src = `data:image/svg+xml;base64,${Buffer.from(data, "utf8").toString("base64")}`;
+					image.width = viewBox.width * scale;
+					image.height = viewBox.height * scale;
 
-				const parts: Buffer[] = [];
-				const stream = target === RenderTarget.png
-					? canvas.createPNGStream()
-					: canvas.createJPEGStream({ quality: this.config.quality });
+					const canvas = createCanvas(viewBox.width * scale, viewBox.height * scale);
+					const ctx = canvas.getContext("2d");
+					ctx.drawImage(image, 0, 0);
 
-				stream.on("error", error => this.emit("error", error));
-				stream.on("data", data => parts.push(data));
-				stream.on("end", () => {
-					const filename = name + (target === RenderTarget.png ? ".png" : ".jpg");
-					this.emit("file", { filename, data: Buffer.concat(parts) });
-				});
+					const parts: Buffer[] = [];
+					const stream = target === RenderTarget.png
+						? canvas.createPNGStream()
+						: canvas.createJPEGStream({ quality: this.config.quality });
 
-				break;
+					stream.on("error", error => this.emit("error", error));
+					stream.on("data", data => parts.push(data));
+					stream.on("end", () => {
+						const filename = name + (target === RenderTarget.png ? ".png" : ".jpg");
+						this.emit("file", { filename, data: Buffer.concat(parts) });
+					});
+
+					break;
+				}
+
+				default: {
+					const filename = name + ".svg";
+					this.emit("file", { filename, data });
+					break;
+				}
 			}
-
-			default: {
-				const filename = name + ".svg";
-				this.emit("file", { filename, data });
-				break;
-			}
-		}
-		this.emit("emit", { moduleFilename, name, data });
+			this.emit("emit", { moduleFilename, name, data });
+		})().catch(error => {
+			this.emit("error", error);
+		});
 	}
 
 	private _invalidate({ moduleFilename, deleted }: RuntimeInvalidateEvent) {
