@@ -20,6 +20,7 @@ export interface Config {
 	scale: number;
 	format: SvgFormat;
 	preview: PreviewConfig;
+	optimize: boolean;
 }
 
 export function isSource(config: Config, filename: string) {
@@ -116,7 +117,6 @@ export function applyConfigArgs(config: Config, args: any) {
 
 export async function readConfigFile(filename?: string): Promise<Config> {
 	// TODO: Improve ts error handling and diagnostics.
-	// TODO: Add validation.
 
 	let json: any;
 	let fileExists = true;
@@ -194,6 +194,11 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 	const previewPort = jsonPreview.port || 3000;
 	const previewAddress = jsonPreview.address || "::1";
 
+	const optimize = json.optimize === undefined ? true : json.optimize;
+	if (typeof optimize !== "boolean") {
+		throw new TypeError(`optimize must be a boolean.`);
+	}
+
 	return {
 		cwd,
 		filename,
@@ -213,6 +218,7 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 		preview: {
 			port: previewPort,
 			address: previewAddress
-		}
+		},
+		optimize
 	};
 }

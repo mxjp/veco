@@ -169,7 +169,9 @@ export class Renderer extends Emitter<{
 				? this.formatDomSvg(element)
 				: this.formatXmlSvg(element);
 
-			data = await this.optimizeData(data);
+			if (this.config.optimize) {
+				data = await this.optimizeData(data);
+			}
 
 			switch (target) {
 				case RenderTarget.png:
