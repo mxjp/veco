@@ -17,8 +17,6 @@ emit(<svg viewBox="0 0 100 100">
 </svg>)
 ```
 
-> **Note:** `emit(..)` will throw when used outside of the veco runtime.
-
 <br>
 
 
@@ -48,7 +46,7 @@ Create a configuration file for your project:
 	include: ["**"],
 
 	// An array with globs to exclude:
-	exclude: [],
+	exclude: ["**/node_modules/**"],
 
 	// The render target.
 	//  - xml - Standalone xml svg files.
@@ -73,7 +71,10 @@ Create a configuration file for your project:
 	preview: {
 		port: 3000,
 		address: "::1"
-	}
+	},
+
+	// Enable/disable optimization (currently uses svgo):
+	optimize: true
 }
 ```
 

@@ -168,7 +168,7 @@ export async function readConfigFile(filename?: string): Promise<Config> {
 	const include = json.include || ["**"];
 	const includeTester = createTester(include);
 
-	const exclude = json.exclude || [];
+	const exclude = json.exclude || ["**/node_modules/**"];
 	const excludeTester = createTester(exclude);
 
 	const target = json.target || "xml";
