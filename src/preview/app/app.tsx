@@ -7,6 +7,7 @@ import { Navbar } from "./navbar";
 import { Directory } from "./directory";
 import { SvgViewer } from "./svg-viewer";
 import { ReadonlyDirEntry } from "../utility/virtual-store";
+import { FailSafe } from "./fail-safe";
 
 export interface AppState {
 	route?: ReadonlyDirEntry<string>,
@@ -32,7 +33,9 @@ export class App extends Component<{}, AppState> {
 		return <Layout fill flex="col" separator>
 			<Navbar/>
 			{current && current[0] === "dir" && <Directory value={current[1] as any}/>}
-			{current && current[0] === "val" && <SvgViewer data={current[1]}/>}
+			{current && current[0] === "val" && <FailSafe>
+				<SvgViewer data={current[1]}/>
+			</FailSafe>}
 		</Layout>;
 	}
 }
