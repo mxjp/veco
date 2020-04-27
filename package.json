@@ -76,5 +76,8 @@
 		"ignoredByWatcher": [
 			"test/out/data"
 		]
-	}
+	},
+	"repository": "github:mxjp/veco",
+	"author": "Max J. Polster",
+	"license": "MIT"
 }
