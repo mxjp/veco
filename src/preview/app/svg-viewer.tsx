@@ -4,6 +4,7 @@ import { Layout } from "../components/layout";
 import { Content } from "../components/content";
 import { Link } from "../components/link";
 import { Text } from "../components/text";
+import { ExpectedError } from "./fail-safe";
 
 export class SvgViewer extends Component<{
 	data?: string
@@ -83,6 +84,9 @@ export class SvgViewer extends Component<{
 					svg.removeAttribute("height");
 
 					const viewBox = svg.viewBox.baseVal;
+					if (!viewBox) {
+						throw new ExpectedError("svg element must have a viewBox attribute");
+					}
 					container.style.setProperty("--width", `${viewBox.width}px`);
 					container.style.setProperty("--height", `${viewBox.height}px`);
 
