@@ -21,7 +21,7 @@ export class Vec {
 	}
 
 	public div(value: number) {
-		return new Vec(this.x * value, this.y * value);
+		return new Vec(this.x / value, this.y / value);
 	}
 
 	public distanceSqr(to: Vec): number {
