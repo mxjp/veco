@@ -29,7 +29,7 @@ export class Vec {
 	}
 
 	public distance(to: Vec): number {
-		return (this.x - to.x) ** 2 + (this.y - to.y) ** 2;
+		return Math.sqrt(this.distanceSqr(to));
 	}
 
 	public normalize() {
