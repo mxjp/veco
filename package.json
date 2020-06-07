@@ -1,6 +1,6 @@
 {
 	"name": "veco",
-	"version": "0.3.4",
+	"version": "0.3.5",
 	"description": "A toolchain for svg generation",
 	"main": "./dist/runtime/index.js",
 	"scripts": {
