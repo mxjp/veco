@@ -1,4 +1,4 @@
-import * as path from "path";
+import path from "path";
 import { sync as mkdir } from "mkdirp";
 import { IEmitter } from "../common/emitter";
 import { writeFileSync } from "fs";

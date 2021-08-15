@@ -1,5 +1,5 @@
 import { Component, h } from "preact";
-import * as styles from "./breadcrumbs.scss";
+import styles from "./breadcrumbs.scss";
 import { Text } from "./text";
 import { toggle } from "../utility/preact";
 

@@ -1,6 +1,6 @@
-import * as path from "path";
-import * as ts from "typescript";
-import * as walk from "klaw-sync";
+import path from "path";
+import ts from "typescript";
+import walk from "klaw-sync";
 import { watch } from "chokidar";
 import { AsyncDisposable } from "../common/disposable";
 import { Emitter, Event } from "../common/emitter";

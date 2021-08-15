@@ -1,4 +1,4 @@
-import * as path from "path";
+import path from "path";
 import { Runtime, RuntimeEmitCallback } from "./runtime";
 import { runInContext, createContext } from "vm";
 import * as RuntimeApi from "../runtime";
@@ -28,9 +28,14 @@ export class RuntimeModule {
 
 	public getRuntimeAPI(): typeof RuntimeApi {
 		if (!this._runtime) {
-			this._runtime = Object.assign(Object.create(RuntimeApi), <typeof RuntimeApi> {
-				emit: this._runtimeEmit.bind(this)
+			this._runtime = Object.assign(Object.create(RuntimeApi));
+			Object.defineProperty(this._runtime, "emit", {
+				value: this._runtimeEmit.bind(this)
 			});
+
+			// this._runtime = Object.assign(Object.create(RuntimeApi), <typeof RuntimeApi> {
+			// 	emit: this._runtimeEmit.bind(this)
+			// });
 		}
 		return this._runtime!;
 	}

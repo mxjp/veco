@@ -1,5 +1,10 @@
 
 declare module "*.scss" {
 	const classes: Record<string, string>;
-	export = classes;
+	export default classes;
+}
+
+declare module "*.svg" {
+	const url: string;
+	export default url;
 }

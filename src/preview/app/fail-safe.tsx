@@ -1,7 +1,7 @@
 import { h, Component, RenderableProps } from "preact";
 import { Layout } from "../components/layout";
 import { Content } from "../components/content";
-import * as styles from "./fail-safe.scss";
+import styles from "./fail-safe.scss";
 import { Text } from "../components/text";
 
 interface State {

@@ -1,5 +1,5 @@
 import { Element } from "./element";
-import * as Color from "color";
+import Color from "color";
 
 interface ColorPropInfo {
 	alphaChannelProp?: string;

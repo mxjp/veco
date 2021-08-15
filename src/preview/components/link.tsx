@@ -1,5 +1,5 @@
 import { Component, h } from "preact";
-import * as styles from "./link.scss";
+import styles from "./link.scss";
 
 export class Link extends Component<{
 	action?: () => void

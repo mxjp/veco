@@ -1,5 +1,5 @@
-import * as path from "path";
-import * as ts from "typescript";
+import path from "path";
+import ts from "typescript";
 import { promises as fs } from "fs";
 import { parse } from "json5";
 import createTester, { Tester } from "anymatch";
