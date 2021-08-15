@@ -1,4 +1,4 @@
-import * as path from "path";
+import path from "path";
 import { Log } from "../common/logging";
 import { RuntimeModule } from "./runtime-module";
 import { Emitter, Event } from "../common/emitter";

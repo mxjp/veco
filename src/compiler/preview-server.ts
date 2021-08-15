@@ -1,12 +1,12 @@
-import * as path from "path";
+import path from "path";
 import { Config } from "./config";
-import * as express from "express";
+import express from "express";
 import { Server, createServer } from "http";
 import { AddressInfo } from "net";
 import { Emitter } from "../common/emitter";
 import { Log } from "../common/logging";
 import { Renderer } from "./renderer";
-import * as WebSocket from "ws";
+import WebSocket from "ws";
 import { Disposable, dispose } from "../common/disposable";
 import { Message, EmitMessage } from "./preview-socket-messages";
 

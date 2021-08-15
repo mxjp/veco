@@ -5,10 +5,10 @@ import { Runtime, RuntimeEmitEvent, RuntimeInvalidateEvent } from "./runtime";
 import { ModuleCompiler, ModuleCompilerDeleteEvent } from "./module-compiler";
 import { Disposable, dispose } from "../common/disposable";
 import { Element, ElementChild } from "../runtime";
-import * as htmlEscape from "escape-html";
+import htmlEscape from "escape-html";
 import { FileEvent } from "./file-emitter";
 import { parseViewBox } from "./properties/view-box";
-import * as SVGO from "svgo";
+import { optimize, Plugin as SvgoPlugin } from "svgo";
 
 export interface RendererEmitEvent {
 	readonly moduleFilename: string;
@@ -52,47 +52,50 @@ export class Renderer extends Emitter<{
 	}
 
 	protected async optimizeData(data: string) {
-		const svgo = new SVGO({
+		const plugins: SvgoPlugin[] = [
+			"cleanupAttrs",
+			"removeComments",
+			"removeMetadata",
+			"removeTitle",
+			"removeDesc",
+			"removeUselessDefs",
+			"removeEmptyAttrs",
+			"removeHiddenElems",
+			"removeEmptyText",
+			"removeEmptyContainers",
+			"cleanupEnableBackground",
+			"minifyStyles",
+			"convertStyleToAttrs",
+			"convertColors",
+			"convertPathData",
+			"convertTransform",
+			"removeUnknownsAndDefaults",
+			"removeNonInheritableGroupAttrs",
+			"removeUselessStrokeAndFill",
+			"removeUnusedNS",
+			"cleanupIDs",
+			"cleanupNumericValues",
+			"cleanupListOfValues",
+			"moveElemsAttrsToGroup",
+			"moveGroupAttrsToElems",
+			"collapseGroups",
+			"mergePaths",
+			"convertShapeToPath",
+			"sortDefsChildren",
+		];
+
+		if (this.config.target !== RenderTarget.xml) {
+			plugins.push(
+				"removeXMLNS",
+				"removeXMLProcInst",
+			);
+		}
+
+		data = optimize(data, {
+			multipass: true,
 			floatPrecision: 4,
-			plugins: [
-				{ cleanupAttrs: true },
-				{ removeDoctype: false },
-				{ removeXMLNS: false },
-				{ removeXMLProcInst: false },
-				{ removeComments: true },
-				{ removeMetadata: true },
-				{ removeTitle: true },
-				{ removeDesc: true },
-				{ removeUselessDefs: true },
-				{ removeEmptyAttrs: true },
-				{ removeEmptyAttrs: true },
-				{ removeHiddenElems: true },
-				{ removeEmptyText: true },
-				{ removeEmptyContainers: true },
-				{ removeViewBox: false },
-				{ cleanupEnableBackground: true },
-				{ minifyStyles: true },
-				{ convertStyleToAttrs: true },
-				{ convertColors: true },
-				{ convertPathData: true },
-				{ convertTransform: true },
-				{ removeUnknownsAndDefaults: true },
-				{ removeNonInheritableGroupAttrs: true },
-				{ removeUselessStrokeAndFill: true },
-				{ removeUnusedNS: true },
-				{ cleanupIDs: false },
-				{ cleanupNumericValues: true },
-				{ cleanupListOfValues: true },
-				{ moveElemsAttrsToGroup: true },
-				{ moveGroupAttrsToElems: true },
-				{ collapseGroups: true },
-				{ removeRasterImages: false },
-				{ mergePaths: true },
-				{ convertShapeToPath: true },
-				{ sortDefsChildren: true }
-			]
-		});
-		data = (await svgo.optimize(data)).data;
+			plugins,
+		}).data;
 
 		return data;
 	}

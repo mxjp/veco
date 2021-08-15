@@ -1,5 +1,5 @@
 import { Component, h } from "preact";
-import * as styles from "./layout.scss";
+import styles from "./layout.scss";
 import { toggle } from "../utility/preact";
 
 export class Layout extends Component<{

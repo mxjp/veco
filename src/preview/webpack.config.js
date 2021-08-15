@@ -20,14 +20,13 @@ exports.default = ({ prod } = {}) => {
 				{ test: /\.s[ac]ss$/, use: [
 					"style-loader",
 					{ loader: "css-loader", options: {
-						modules: true,
-						esModule: true
+						modules: true
 					} },
 					{ loader: "sass-loader", options: {
 						implementation: require("sass")
 					} }
 				] },
-				{ test: /\.svg$/, use: "url-loader" }
+				{ test: /\.svg$/, use: "file-loader" }
 			]
 		},
 		plugins: [
@@ -44,7 +43,8 @@ exports.default = ({ prod } = {}) => {
 		],
 		output: {
 			path: path.join(context, "dist/preview"),
-			filename: "[name]-[hash].js"
+			filename: "[contenthash].js",
+			publicPath: "/",
 		},
 		devServer: {
 			hot: true

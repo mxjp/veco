@@ -1,10 +1,11 @@
 import { Component, h } from "preact";
-import * as styles from "./svg-viewer.scss";
+import styles from "./svg-viewer.scss";
 import { Layout } from "../components/layout";
 import { Content } from "../components/content";
 import { Link } from "../components/link";
 import { Text } from "../components/text";
 import { ExpectedError } from "./fail-safe";
+import background from "../assets/svg-viewer-background.svg";
 
 export class SvgViewer extends Component<{
 	data?: string
@@ -41,7 +42,9 @@ export class SvgViewer extends Component<{
 		this._renderData(this._container);
 		return <Layout grow flex="col" separator>
 			<div class={styles.viewer}>
-				<div class={styles.viewport} onMouseDown={this._move} onWheel={this._zoom} ref={this._renderViewport}>
+				<div class={styles.viewport} style={{
+					backgroundImage: `url("${encodeURIComponent(background)}")`
+				}} onMouseDown={this._move} onWheel={this._zoom} ref={this._renderViewport}>
 					<div class={styles.center}>
 						<div class={styles.container} ref={this._renderData} style={{
 							"--x": `${this.state.x}px`,
